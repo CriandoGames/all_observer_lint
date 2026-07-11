@@ -28,3 +28,4 @@ custom_lint:
     - prefer_batch_for_multiple_related_writes
     - prefer_assign_all_for_reactive_list_replace
     - unused_reactive_state
+    - unobserved_reactive_read_in_build

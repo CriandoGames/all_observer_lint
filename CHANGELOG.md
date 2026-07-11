@@ -27,6 +27,8 @@ Fixes and improvements:
   writes that are already inside `Observable.batch`.
 - Added the strict/all `unused_reactive_state` rule for private reactive fields
   and top-level variables that are never referenced in the same file.
+- Added the strict/all `unobserved_reactive_read_in_build` rule for reactive
+  `.value` reads rendered in `build` without `Observer` or `watch(context)`.
 
 ## 0.3.0
 

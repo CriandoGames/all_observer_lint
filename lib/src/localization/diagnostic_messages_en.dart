@@ -61,6 +61,10 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
         'This private reactive state is never used in this file. Remove it '
         'or wire it into an Observer, Computed, effect, worker, or '
         'watch(context).',
+    DiagnosticMessageKey.unobservedReactiveReadInBuild:
+        'This reactive value is read during build without an observed context. '
+        'Wrap the rendered UI in Observer or read it with watch(context) so '
+        'the widget updates when the value changes.',
   };
 
   @override

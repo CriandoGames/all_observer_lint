@@ -18,4 +18,5 @@ enum DiagnosticMessageKey {
   preferBatchForMultipleRelatedWrites,
   preferAssignAllForReactiveListReplace,
   unusedReactiveState,
+  unobservedReactiveReadInBuild,
 }

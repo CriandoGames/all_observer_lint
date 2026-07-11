@@ -70,6 +70,10 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
         'Este estado reativo privado nao e usado neste arquivo. Remova-o '
         'ou conecte-o a um Observer, Computed, effect, worker ou '
         'watch(context).',
+    DiagnosticMessageKey.unobservedReactiveReadInBuild:
+        'Este valor reativo e lido durante o build sem um contexto observado. '
+        'Envolva a UI renderizada em Observer ou leia com watch(context) para '
+        'o widget atualizar quando o valor mudar.',
   };
 
   @override
