@@ -62,6 +62,10 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
         'Múltiplas escritas reativas relacionadas ocorrem aqui sem batch. '
             'Se listeners externos observam estados intermediários, considere '
             'envolver essas escritas em batch(() { ... }).',
+    DiagnosticMessageKey.preferAssignAllForReactiveListReplace:
+        'Prefira assignAll(...) ou assign(...) ao substituir uma ObservableList. '
+            'Chamar clear() e depois add/addAll notifica em duas etapas '
+            'separadas e pode expor uma lista vazia intermediária.',
   };
 
   @override

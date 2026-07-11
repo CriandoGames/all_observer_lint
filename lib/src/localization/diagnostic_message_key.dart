@@ -16,4 +16,5 @@ enum DiagnosticMessageKey {
   selfReferencingComputed,
   preferComputedForDerivedState,
   preferBatchForMultipleRelatedWrites,
+  preferAssignAllForReactiveListReplace,
 }

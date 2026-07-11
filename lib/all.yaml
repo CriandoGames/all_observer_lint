@@ -25,3 +25,4 @@ all_observer:
     - self_referencing_computed
     - prefer_computed_for_derived_state
     - prefer_batch_for_multiple_related_writes
+    - prefer_assign_all_for_reactive_list_replace

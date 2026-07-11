@@ -50,6 +50,11 @@ class AllObserverTypeChecker {
     'CoreComputed',
   };
 
+  static const Set<String> _observableListClassNames = {
+    'ObservableList',
+    'CoreObservableList',
+  };
+
   static const Set<String> _observableFutureClassNames = {'ObservableFuture'};
   static const Set<String> _observableStreamClassNames = {'ObservableStream'};
 
@@ -249,4 +254,8 @@ class AllObserverTypeChecker {
   /// Whether [type] is (or extends) `Computed`/`CoreComputed`.
   bool isComputedType(DartType? type) =>
       _hasReactiveSupertypeNamed(type, _computedClassNames);
+
+  /// Whether [type] is (or extends) `ObservableList`/`CoreObservableList`.
+  bool isObservableListType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _observableListClassNames);
 }

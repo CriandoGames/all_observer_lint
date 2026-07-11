@@ -8,6 +8,7 @@ import 'rules/avoid_reactive_write_in_computed.dart';
 import 'rules/avoid_set_state_in_computed.dart';
 import 'rules/avoid_worker_creation_in_computed.dart';
 import 'rules/dispose_reactive_resources.dart';
+import 'rules/prefer_assign_all_for_reactive_list_replace.dart';
 import 'rules/prefer_batch_for_multiple_related_writes.dart';
 import 'rules/prefer_computed_for_derived_state.dart';
 import 'rules/self_referencing_computed.dart';
@@ -23,13 +24,13 @@ import 'rules/watch_only_inside_build.dart';
 class AllObserverLintPlugin extends PluginBase {
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
-        // Fase 2 — localização e ciclo de vida.
+        //localização e ciclo de vida.
         AvoidReactiveCreationInBuild(configs: configs),
         AvoidEffectCreationInBuild(configs: configs),
         WatchOnlyInsideBuild(configs: configs),
         DisposeReactiveResources(configs: configs),
 
-        // Fase 3 — pureza reativa (avoid_side_effects_in_computed split
+        //pureza reativa (avoid_side_effects_in_computed split
         // into narrower, individually testable/provable rules).
         AvoidReactiveWriteInComputed(configs: configs),
         AvoidSetStateInComputed(configs: configs),
@@ -41,5 +42,6 @@ class AllObserverLintPlugin extends PluginBase {
         // Strict / experimental (info, not in recommended).
         PreferComputedForDerivedState(configs: configs),
         PreferBatchForMultipleRelatedWrites(configs: configs),
+        PreferAssignAllForReactiveListReplace(configs: configs),
       ];
 }

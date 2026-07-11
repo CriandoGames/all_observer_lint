@@ -18,6 +18,16 @@ class Observable<T> extends CoreObservable<T> {
   Observable(super.value);
 }
 
+class ObservableList<T> extends CoreObservable<List<T>> {
+  ObservableList(super.value);
+
+  void clear() {}
+  void add(T value) {}
+  void addAll(Iterable<T> values) {}
+  void assign(T value) {}
+  void assignAll(Iterable<T> values) {}
+}
+
 class CoreComputed<T> {
   CoreComputed(this._compute);
   final T Function() _compute;
@@ -65,6 +75,10 @@ void batch(void Function() callback) => callback();
 
 extension ObservableExtension<T> on T {
   Observable<T> get obs => Observable<T>(this);
+}
+
+extension ObservableListExtension<T> on List<T> {
+  ObservableList<T> get obs => ObservableList<T>(this);
 }
 
 extension WatchExtension<T> on CoreObservable<T> {
