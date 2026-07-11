@@ -154,6 +154,7 @@ class _SearchPageState extends State<SearchPage> {
 | [`avoid_worker_creation_in_computed`](documentation/pt-BR/rules/avoid_worker_creation_in_computed.md) | Workers/effects criados dentro de callbacks de `Computed`. |
 | [`avoid_io_in_computed`](documentation/pt-BR/rules/avoid_io_in_computed.md) | `await` ou I/O evidente de `dart:io` dentro de callbacks de `Computed`. |
 | [`avoid_observable_write_during_observer_build`](documentation/pt-BR/rules/avoid_observable_write_during_observer_build.md) | Escritas reativas enquanto um `Observer` esta construindo UI. |
+| [`self_referencing_computed`](documentation/pt-BR/rules/self_referencing_computed.md) | Um `Computed` lendo diretamente o próprio `.value`. |
 | [`prefer_computed_for_derived_state`](documentation/pt-BR/rules/prefer_computed_for_derived_state.md) | Estado derivado manual que poderia ser um `Computed`. |
 | [`prefer_batch_for_multiple_related_writes`](documentation/pt-BR/rules/prefer_batch_for_multiple_related_writes.md) | Escritas reativas relacionadas que podem se beneficiar de `batch`. |
 

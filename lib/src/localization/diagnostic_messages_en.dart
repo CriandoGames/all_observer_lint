@@ -41,6 +41,10 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
         'Avoid mutating reactive state while an Observer is building. Keep '
             'rendering callbacks read-only and perform state changes in '
             'actions, event handlers, effects, or controllers.',
+    DiagnosticMessageKey.selfReferencingComputed:
+        'A Computed value cannot read its own value inside its callback. This '
+            'creates a reactive cycle that cannot stabilize; derive from other '
+            'reactive values instead.',
     DiagnosticMessageKey.preferComputedForDerivedState:
         'This observable appears to be manually kept in sync with other '
             'observables. Consider deriving it with Computed instead of '

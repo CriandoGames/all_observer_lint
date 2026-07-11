@@ -22,5 +22,6 @@ all_observer:
     - avoid_worker_creation_in_computed
     - avoid_io_in_computed
     - avoid_observable_write_during_observer_build
+    - self_referencing_computed
     - prefer_computed_for_derived_state
     - prefer_batch_for_multiple_related_writes

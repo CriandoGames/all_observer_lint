@@ -32,13 +32,10 @@ regression test in the `all_observer` repository itself, a lint-side test
 suite (positive/negative/aliases/subclasses), and a documented technical
 review answering the eight questions in section 23.5.
 
-- **`self_referencing_computed`** — a `Computed` that reads its own
-  `.value` inside its derivation. Strong candidate per the brief (section
-  26.2): if `all_observer` really throws `ObserverCycleError` for this
-  deterministically, in every supported version, this is close to
-  provable. Not implemented in this version — needs a runtime test against
-  the real `all_observer` first, which requires access to that repository
-  and its test suite. Would live in the `reactive-cycle` category.
+- **`self_referencing_computed`** — implemented in v0.1.0 as an `error` for
+  direct self-dependencies where a `Computed(...)` assigned to a variable/field
+  reads that same symbol's `.value` inside its callback. Longer computed cycles
+  such as `a -> b -> a` remain future work.
 - **`unconditional_reactive_write_during_observer_build`** — the subset of
   `avoid_observable_write_during_observer_build` where the write is
   unconditional and targets a dependency the same callback unconditionally

@@ -31,6 +31,7 @@ runtime.
   ```
 
 - Quick fix support for missing disposal of reactive resources.
+- Error-level protection for direct self-referencing `Computed` values.
 - Example Flutter app with flagged and fixed patterns.
 - Bilingual rule documentation.
 
@@ -47,6 +48,7 @@ Recommended rules:
 - `avoid_worker_creation_in_computed`
 - `avoid_io_in_computed`
 - `avoid_observable_write_during_observer_build`
+- `self_referencing_computed`
 
 Strict rules:
 
@@ -77,7 +79,9 @@ developer is still writing the code.
 
 ### Notes
 
-- All v0.1.0 recommended rules are intentionally conservative.
-- No rule ships as `error` in this release. Future error-level rules will require
-  reproducible runtime evidence and dedicated documentation.
+- Most v0.1.0 recommended rules are intentionally conservative warnings.
+- `self_referencing_computed` ships as `error` because it detects a direct
+  reactive cycle.
+- Future error-level rules will require reproducible evidence and dedicated
+  documentation.
 - The package is development-only and does not add runtime dependencies to apps.

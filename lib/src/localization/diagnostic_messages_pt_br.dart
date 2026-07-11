@@ -50,6 +50,10 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
             'construindo. Mantenha callbacks de renderização somente leitura e '
             'faça alterações de estado em actions, event handlers, effects ou '
             'controllers.',
+    DiagnosticMessageKey.selfReferencingComputed:
+        'Um Computed não pode ler o próprio valor dentro do callback. Isso '
+            'cria um ciclo reativo que não consegue estabilizar; derive o valor '
+            'a partir de outros estados reativos.',
     DiagnosticMessageKey.preferComputedForDerivedState:
         'Este observável parece ser mantido manualmente em sincronia com '
             'outros observáveis. Considere derivá-lo com Computed em vez de '

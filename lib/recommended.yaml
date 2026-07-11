@@ -5,10 +5,8 @@
 #   include: package:all_observer_lint/recommended.yaml
 #
 # This enables the rules considered safe enough for everyday use: low
-# false-positive rate, clear diagnostics, and a demonstrated real-world
-# failure mode behind every one of them. None of them are `error` yet —
-# see documentation/backlog.md and section 29 of the project brief
-# ("provas antes de bloquear o CI") for the promotion path.
+# false-positive rate, clear diagnostics, and evidence-backed diagnostics for
+# patterns that violate core reactive invariants.
 analyzer:
   plugins:
     - custom_lint
@@ -26,3 +24,4 @@ all_observer:
     - avoid_worker_creation_in_computed
     - avoid_io_in_computed
     - avoid_observable_write_during_observer_build
+    - self_referencing_computed

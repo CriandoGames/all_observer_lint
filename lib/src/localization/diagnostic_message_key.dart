@@ -13,6 +13,7 @@ enum DiagnosticMessageKey {
   workerCreationInsideComputed,
   ioInsideComputed,
   observableWriteDuringObserverBuild,
+  selfReferencingComputed,
   preferComputedForDerivedState,
   preferBatchForMultipleRelatedWrites,
 }

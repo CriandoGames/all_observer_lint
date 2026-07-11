@@ -11,6 +11,12 @@ class Observer {
   void watch(Object context) {}
 }
 
+class Computed<T> {
+  Computed(this.compute);
+  final T Function() compute;
+  T get value => compute();
+}
+
 extension FakeObsExtension<T> on T {
   Observable<T> get obs => Observable<T>(this);
 }

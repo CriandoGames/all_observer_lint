@@ -10,6 +10,7 @@ import 'rules/avoid_worker_creation_in_computed.dart';
 import 'rules/dispose_reactive_resources.dart';
 import 'rules/prefer_batch_for_multiple_related_writes.dart';
 import 'rules/prefer_computed_for_derived_state.dart';
+import 'rules/self_referencing_computed.dart';
 import 'rules/watch_only_inside_build.dart';
 
 /// The `all_observer_lint` `custom_lint` plugin.
@@ -35,6 +36,7 @@ class AllObserverLintPlugin extends PluginBase {
         AvoidWorkerCreationInComputed(configs: configs),
         AvoidIoInComputed(configs: configs),
         AvoidObservableWriteDuringObserverBuild(configs: configs),
+        SelfReferencingComputed(configs: configs),
 
         // Strict / experimental (info, not in recommended).
         PreferComputedForDerivedState(configs: configs),
