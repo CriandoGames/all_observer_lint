@@ -64,7 +64,7 @@ Registro indireto por meio de uma função auxiliar chamada a partir do
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_effect_creation_in_build: false
 ```

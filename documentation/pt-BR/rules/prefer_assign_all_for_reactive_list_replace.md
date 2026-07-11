@@ -76,7 +76,7 @@ colecoes.
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - prefer_assign_all_for_reactive_list_replace: false
 ```

@@ -3,8 +3,8 @@ import 'diagnostic_messages.dart';
 
 /// Mensagens de diagnóstico em português do Brasil.
 ///
-/// Disponível por configuração explícita (`all_observer: language: pt-BR`
-/// em `analysis_options.yaml`). O significado técnico é equivalente ao das
+/// Disponível por configuração explícita (`all_observer.language: pt-BR`
+/// dentro de `custom_lint.rules`). O significado técnico é equivalente ao das
 /// mensagens em inglês; a tradução é adaptada à terminologia usada por
 /// desenvolvedores brasileiros, não é uma tradução literal.
 class DiagnosticMessagesPtBr implements DiagnosticMessages {

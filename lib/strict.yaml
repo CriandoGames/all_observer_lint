@@ -10,7 +10,7 @@
 #   include: package:all_observer_lint/strict.yaml
 include: package:all_observer_lint/recommended.yaml
 
-all_observer:
+custom_lint:
   rules:
     - prefer_computed_for_derived_state
     - prefer_batch_for_multiple_related_writes

@@ -73,7 +73,7 @@ Writes to reactive collections are not detected in this version; only
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_observable_write_during_observer_build: false
 ```

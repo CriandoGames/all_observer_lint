@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Fixed preset configuration to use `custom_lint.rules`, the configuration
+  shape exposed by `custom_lint`.
+- Fixed Brazilian Portuguese diagnostic opt-in documentation and tests.
+- `recommended.yaml`, `strict.yaml`, and `all.yaml` now explicitly disable
+  unspecified lint rules so each preset enables only its intended rules.
+
 ## 0.3.0
 
 Documentation-only update. No changes to rule behavior, presets, or the
@@ -46,8 +54,10 @@ runtime.
 - Brazilian Portuguese diagnostics with:
 
   ```yaml
-  all_observer:
-    language: pt-BR
+  custom_lint:
+    rules:
+      - all_observer:
+        language: pt-BR
   ```
 
 - Quick fix support for missing disposal of reactive resources.

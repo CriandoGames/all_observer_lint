@@ -71,7 +71,7 @@ class _CounterState extends State<Counter> {
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_reactive_creation_in_build: false
 ```

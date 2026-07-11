@@ -11,10 +11,12 @@ analyzer:
   plugins:
     - custom_lint
 
-all_observer:
-  # Uncomment to switch every diagnostic message to Brazilian Portuguese.
-  # language: pt-BR
+custom_lint:
+  enable_all_lint_rules: false
   rules:
+    # Uncomment to switch every diagnostic message to Brazilian Portuguese.
+    # - all_observer:
+    #   language: pt-BR
     - avoid_reactive_creation_in_build
     - avoid_effect_creation_in_build
     - watch_only_inside_build

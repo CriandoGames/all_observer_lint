@@ -61,7 +61,7 @@ Calls made from top-level or local functions/closures are not analyzed
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - watch_only_inside_build: false
 ```

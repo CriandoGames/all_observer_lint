@@ -88,6 +88,10 @@ false-positive risks.
 
 ## Infrastructure follow-ups
 
+- **Resolved:** presets and localization now use the `custom_lint.rules`
+  configuration shape that `custom_lint` actually exposes to plugins. Earlier
+  documentation used a top-level `all_observer:` key inspired by standalone
+  linters such as `bloc_lint`, but that key is invisible to `CustomLintConfigs`.
 - **Plugin wiring smoke test.** `test/all_observer_lint_test.dart` only
   checks `createPlugin()` returns a `PluginBase`. CI now also runs lower-bound
   resolution, and the example project is used as a real analyzer/custom_lint

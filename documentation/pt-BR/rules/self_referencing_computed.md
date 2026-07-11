@@ -68,7 +68,7 @@ Veja [self_referencing_computed.md](../../evidence/self_referencing_computed.md)
 ```yaml
 include: package:all_observer_lint/recommended.yaml
 
-all_observer:
+custom_lint:
   rules:
     self_referencing_computed: false
 ```

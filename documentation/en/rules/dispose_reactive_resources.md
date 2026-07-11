@@ -65,7 +65,7 @@ would rather stay silent than guess.
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - dispose_reactive_resources: false
 ```

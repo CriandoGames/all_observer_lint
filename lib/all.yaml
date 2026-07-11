@@ -11,7 +11,8 @@ analyzer:
   plugins:
     - custom_lint
 
-all_observer:
+custom_lint:
+  enable_all_lint_rules: false
   rules:
     - avoid_reactive_creation_in_build
     - avoid_effect_creation_in_build

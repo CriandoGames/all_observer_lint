@@ -49,7 +49,7 @@ callback is not detected in this version.
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_worker_creation_in_computed: false
 ```

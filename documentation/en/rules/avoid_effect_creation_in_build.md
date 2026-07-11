@@ -63,7 +63,7 @@ detected in this version.
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_effect_creation_in_build: false
 ```

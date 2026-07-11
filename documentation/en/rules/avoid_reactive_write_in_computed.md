@@ -70,7 +70,7 @@ final normalized = Computed(
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_reactive_write_in_computed: false
 ```

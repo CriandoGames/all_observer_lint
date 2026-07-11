@@ -57,7 +57,7 @@ looks "purely derived" today may legitimately need extra state later).
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - prefer_computed_for_derived_state: false
 ```

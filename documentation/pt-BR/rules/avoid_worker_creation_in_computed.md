@@ -51,7 +51,7 @@ Registro por meio de uma função auxiliar chamada dentro do callback de
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_worker_creation_in_computed: false
 ```

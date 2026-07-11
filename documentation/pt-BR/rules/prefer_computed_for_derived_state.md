@@ -59,7 +59,7 @@ estado adicional depois).
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - prefer_computed_for_derived_state: false
 ```

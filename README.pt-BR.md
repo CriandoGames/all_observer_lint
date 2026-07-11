@@ -55,8 +55,10 @@ Para exibir mensagens em português do Brasil:
 ```yaml
 include: package:all_observer_lint/recommended.yaml
 
-all_observer:
-  language: pt-BR
+custom_lint:
+  rules:
+    - all_observer:
+      language: pt-BR
 ```
 
 ## Executar

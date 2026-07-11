@@ -76,7 +76,7 @@ atribuição/incremento/decremento de `.value`.
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_observable_write_during_observer_build: false
 ```

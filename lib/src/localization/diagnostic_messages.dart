@@ -29,8 +29,8 @@ enum AllObserverLintLocale {
 ///
 /// English (`en`) is the default and canonical locale of the package, kept
 /// in sync with the upstream Dart/Flutter ecosystem convention. Brazilian
-/// Portuguese (`pt-BR`) is opt-in via the `all_observer.language` option in
-/// `analysis_options.yaml`.
+/// Portuguese (`pt-BR`) is opt-in via the `all_observer.language` option under
+/// `custom_lint.rules` in `analysis_options.yaml`.
 ///
 /// The two locales must convey the same technical meaning; translations are
 /// not literal, they use terminology familiar to Brazilian developers.

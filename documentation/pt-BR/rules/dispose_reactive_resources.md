@@ -66,7 +66,7 @@ ambígua, e esta regra prefere ficar em silêncio a arriscar um chute.
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - dispose_reactive_resources: false
 ```

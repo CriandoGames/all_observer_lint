@@ -25,7 +25,9 @@ Why:
   mechanism.** `recommended.yaml` / `strict.yaml` / `all.yaml` are plain
   YAML files a consumer's `analysis_options.yaml` can `include:`, matching
   the ecosystem convention already used by `flutter_lints` and similar
-  packages — no bespoke configuration format to document or maintain.
+  packages. Because this package runs on `custom_lint`, rule enablement and
+  rule options live under `custom_lint.rules`, not under a bespoke top-level
+  `all_observer:` parser.
 - **Isolated analyzer dependency.** Only `lib/src/utils/`, `lib/src/rules/`,
   and `lib/src/fixes/` touch `package:analyzer` directly. If a future
   analyzer/custom_lint_builder major version changes its API (this

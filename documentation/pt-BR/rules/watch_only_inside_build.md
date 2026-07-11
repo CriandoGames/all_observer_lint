@@ -63,7 +63,7 @@ não são analisadas (também tratadas como ambíguas) nesta versão.
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - watch_only_inside_build: false
 ```

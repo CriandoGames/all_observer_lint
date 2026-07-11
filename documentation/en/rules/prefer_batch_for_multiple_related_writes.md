@@ -60,7 +60,7 @@ suggestions were explicitly ruled out by this project's brief (section
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - prefer_batch_for_multiple_related_writes: false
 ```

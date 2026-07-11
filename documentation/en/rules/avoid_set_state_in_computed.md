@@ -50,7 +50,7 @@ the `Computed` callback is not detected in this version.
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_set_state_in_computed: false
 ```

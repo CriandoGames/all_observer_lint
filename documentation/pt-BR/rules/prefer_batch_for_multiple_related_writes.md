@@ -62,7 +62,7 @@ deste projeto (seção 8.2).
 ## Como desativar
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - prefer_batch_for_multiple_related_writes: false
 ```

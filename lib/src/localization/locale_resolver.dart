@@ -2,13 +2,15 @@ import 'package:custom_lint_builder/custom_lint_builder.dart';
 
 import 'diagnostic_messages.dart';
 
-/// Reads the `all_observer.language` option from `analysis_options.yaml`
+/// Reads the `all_observer.language` option from `custom_lint.rules`
 /// and resolves it to a supported [AllObserverLintLocale].
 ///
 /// Example:
 /// ```yaml
-/// all_observer:
-///   language: pt-BR
+/// custom_lint:
+///   rules:
+///     - all_observer:
+///       language: pt-BR
 /// ```
 ///
 /// Falls back to [AllObserverLintLocale.en] when the option is absent or

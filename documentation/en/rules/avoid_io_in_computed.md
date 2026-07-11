@@ -54,7 +54,7 @@ project.
 ## Disabling
 
 ```yaml
-all_observer:
+custom_lint:
   rules:
     - avoid_io_in_computed: false
 ```
