@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+Documentation-only update. No changes to rule behavior, presets, or the
+public API.
+
+- Synced `README.md`/`README.pt-BR.md` install snippets and compatibility
+  notes with the 0.2.0 toolchain bump (Dart SDK `>=3.10.0`, `analyzer 8.x`,
+  `custom_lint_builder 0.8.1`), including the `custom_lint`/
+  `all_observer_lint` version pins shown in the install examples.
+
 ## 0.2.0
 
 Compatibility release for the current Dart/custom_lint toolchain.
