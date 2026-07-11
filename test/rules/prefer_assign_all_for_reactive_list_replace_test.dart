@@ -1,3 +1,5 @@
+// ignore_for_file: experimental_member_use
+
 import 'package:all_observer_lint/src/utils/all_observer_type_checker.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';

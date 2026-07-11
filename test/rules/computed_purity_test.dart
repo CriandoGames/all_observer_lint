@@ -1,3 +1,5 @@
+// ignore_for_file: experimental_member_use
+
 import 'package:all_observer_lint/src/utils/all_observer_type_checker.dart';
 import 'package:all_observer_lint/src/utils/computed_callback_finder.dart';
 import 'package:all_observer_lint/src/utils/reactive_write_detector.dart';
