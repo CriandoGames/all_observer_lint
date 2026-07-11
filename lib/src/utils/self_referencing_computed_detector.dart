@@ -31,7 +31,7 @@ class SelfReferencingComputedDetector {
   Element? _ownerElement(InstanceCreationExpression node) {
     final parent = node.parent;
     if (parent is VariableDeclaration && identical(parent.initializer, node)) {
-      return _canonicalElement(parent.declaredElement);
+      return _canonicalElement(parent.declaredFragment?.element);
     }
     if (parent is AssignmentExpression &&
         identical(parent.rightHandSide, node)) {
@@ -113,8 +113,11 @@ class _SelfReferenceVisitor extends RecursiveAstVisitor<void> {
 }
 
 Element? _canonicalElement(Element? element) {
-  if (element is PropertyAccessorElement) return element.variable;
-  return element;
+  if (element == null) return null;
+  if (element is PropertyAccessorElement) {
+    return element.variable?.baseElement ?? element.baseElement;
+  }
+  return element.baseElement;
 }
 
 bool _sameElement(Element? left, Element right) =>

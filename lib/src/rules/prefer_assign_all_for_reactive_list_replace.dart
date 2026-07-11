@@ -109,8 +109,11 @@ Element? _targetElement(Expression expression) {
 }
 
 Element? _canonicalElement(Element? element) {
-  if (element is PropertyAccessorElement) return element.variable;
-  return element;
+  if (element == null) return null;
+  if (element is PropertyAccessorElement) {
+    return element.variable?.baseElement ?? element.baseElement;
+  }
+  return element.baseElement;
 }
 
 bool _sameTarget(_Target left, _Target right) {

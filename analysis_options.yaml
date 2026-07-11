@@ -9,11 +9,8 @@ analyzer:
     strict-inference: true
     strict-raw-types: true
   errors:
-    # custom_lint_builder 0.7/analyzer 7 still expose several stable APIs
-    # through the old element model. Keep the usage centralized in src/utils
-    # and revisit when moving to analyzer 8+.
     deprecated_member_use: ignore
-    experimental_member_use: ignore
+    invalid_null_aware_operator: ignore
   exclude:
     - "test/fixtures/**"
     - "example/**"
