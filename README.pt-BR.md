@@ -167,6 +167,7 @@ class _SearchPageState extends State<SearchPage> {
 | [`prefer_computed_for_derived_state`](documentation/pt-BR/rules/prefer_computed_for_derived_state.md) | Estado derivado manual que poderia ser um `Computed`. |
 | [`prefer_batch_for_multiple_related_writes`](documentation/pt-BR/rules/prefer_batch_for_multiple_related_writes.md) | Escritas reativas relacionadas que podem se beneficiar de `batch`. |
 | [`prefer_assign_all_for_reactive_list_replace`](documentation/pt-BR/rules/prefer_assign_all_for_reactive_list_replace.md) | `ObservableList.clear()` seguido de `add`/`addAll`; prefira `assign`/`assignAll`. |
+| [`unused_reactive_state`](documentation/pt-BR/rules/unused_reactive_state.md) | Campos ou variaveis top-level reativas privadas que nunca sao usadas no mesmo arquivo. |
 
 ## Mais Documentação
 

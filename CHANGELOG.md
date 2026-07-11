@@ -25,6 +25,8 @@ Fixes and improvements:
   consecutive reactive writes in `Observable.batch(() { ... });`.
 - Fixed `prefer_batch_for_multiple_related_writes` so it no longer reports
   writes that are already inside `Observable.batch`.
+- Added the strict/all `unused_reactive_state` rule for private reactive fields
+  and top-level variables that are never referenced in the same file.
 
 ## 0.3.0
 

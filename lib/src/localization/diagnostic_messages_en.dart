@@ -57,6 +57,10 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
         'Prefer assignAll(...) or assign(...) when replacing an ObservableList. '
         'Calling clear() and then add/addAll notifies in two separate '
         'steps and can expose an intermediate empty list.',
+    DiagnosticMessageKey.unusedReactiveState:
+        'This private reactive state is never used in this file. Remove it '
+        'or wire it into an Observer, Computed, effect, worker, or '
+        'watch(context).',
   };
 
   @override

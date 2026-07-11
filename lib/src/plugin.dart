@@ -12,6 +12,7 @@ import 'rules/prefer_assign_all_for_reactive_list_replace.dart';
 import 'rules/prefer_batch_for_multiple_related_writes.dart';
 import 'rules/prefer_computed_for_derived_state.dart';
 import 'rules/self_referencing_computed.dart';
+import 'rules/unused_reactive_state.dart';
 import 'rules/watch_only_inside_build.dart';
 
 /// The `all_observer_lint` `custom_lint` plugin.
@@ -43,5 +44,6 @@ class AllObserverLintPlugin extends PluginBase {
     PreferComputedForDerivedState(configs: configs),
     PreferBatchForMultipleRelatedWrites(configs: configs),
     PreferAssignAllForReactiveListReplace(configs: configs),
+    UnusedReactiveState(configs: configs),
   ];
 }

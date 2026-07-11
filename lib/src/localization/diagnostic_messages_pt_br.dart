@@ -66,6 +66,10 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
         'Prefira assignAll(...) ou assign(...) ao substituir uma ObservableList. '
         'Chamar clear() e depois add/addAll notifica em duas etapas '
         'separadas e pode expor uma lista vazia intermediária.',
+    DiagnosticMessageKey.unusedReactiveState:
+        'Este estado reativo privado nao e usado neste arquivo. Remova-o '
+        'ou conecte-o a um Observer, Computed, effect, worker ou '
+        'watch(context).',
   };
 
   @override
