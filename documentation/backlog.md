@@ -54,10 +54,11 @@ review answering the eight questions in section 23.5.
   direct effect/worker/`ObservableStream` expression; disposal ownership
   transferred through a helper method is not tracked.
 - `ReactiveWriteDetector` only recognizes `.value` assignment/increment/
-  decrement, not reactive-collection mutation (`list.add(...)`,
-  `map[key] = value`). Extending this requires the real `all_observer`
-  reactive-collection API surface, which is not fully specified in this
-  project's brief.
+  decrement, not broad reactive-collection mutation (`list.add(...)`,
+  `map[key] = value`). The targeted `ObservableList.clear()` followed by
+  `add`/`addAll` replacement pattern is covered by
+  `prefer_assign_all_for_reactive_list_replace`, but general collection write
+  detection remains future work.
 - `avoid_io_in_computed` only recognizes `dart:io` and `await`; common HTTP
   client packages, platform channels, and database packages are not
   covered.
@@ -118,5 +119,6 @@ review answering the eight questions in section 23.5.
 
 - `avoid_large_observer_scope` (performance; mentioned as an example in
   the brief's severity matrix, not designed in this version).
-- Reactive-collection-specific rules once the actual `all_observer`
-  collection API is available to key checks on.
+- Broader reactive-collection-specific rules once the actual `all_observer`
+  collection API is available to key checks on beyond the implemented
+  `ObservableList` replacement pattern.

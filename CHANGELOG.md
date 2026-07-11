@@ -54,6 +54,7 @@ Strict rules:
 
 - `prefer_computed_for_derived_state`
 - `prefer_batch_for_multiple_related_writes`
+- `prefer_assign_all_for_reactive_list_replace`
 
 ### Why It Matters
 
@@ -63,6 +64,11 @@ inside tracked contexts such as `Observer`, `Computed`, `effect`, and
 state is mutated, or when subscriptions are disposed can lead to duplicated
 listeners, repeated side effects, lost state, stale observers, or unpredictable
 UI updates.
+
+The strict preset also includes a targeted `ObservableList` replacement rule:
+when code calls `clear()` and immediately follows with `add` or `addAll`, the
+lint suggests `assign` or `assignAll` so replacement happens as one logical
+operation.
 
 `all_observer_lint` turns those patterns into actionable feedback while the
 developer is still writing the code.
