@@ -33,7 +33,7 @@ Your `pubspec.yaml` should contain:
 ```yaml
 dev_dependencies:
   custom_lint: ^0.8.0
-  all_observer_lint: ^0.3.0
+  all_observer_lint: ^0.4.0
 ```
 
 `custom_lint` is required because it is the analyzer runner that loads custom
@@ -60,6 +60,13 @@ custom_lint:
     - all_observer:
       language: pt-BR
 ```
+
+### Migrating from 0.3.x
+
+The package installation command did not change, but custom options now use
+the `custom_lint.rules` configuration shape. If you previously configured
+Portuguese diagnostics with a top-level `all_observer:` key, move that option
+under `custom_lint.rules` as shown above.
 
 ## Run
 

@@ -84,7 +84,10 @@ custom_lint:
           configs: await _ptBrConfigs(),
         );
 
-        expect(rule.code.problemMessage, contains('batch(() { ... })'));
+        expect(
+          rule.code.problemMessage,
+          contains('Observable.batch(() { ... })'),
+        );
         expect(rule.code.problemMessage, contains('escritas reativas'));
         expect(rule.code.problemMessage, isNot(contains('Multiple related')));
       },
@@ -97,7 +100,10 @@ custom_lint:
             rule.code.name == PreferBatchForMultipleRelatedWrites.ruleName,
       );
 
-      expect(rule.code.problemMessage, contains('batch(() { ... })'));
+      expect(
+        rule.code.problemMessage,
+        contains('Observable.batch(() { ... })'),
+      );
       expect(rule.code.problemMessage, contains('escritas reativas'));
       expect(rule.code.problemMessage, isNot(contains('Multiple related')));
     });

@@ -52,7 +52,7 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
     DiagnosticMessageKey.preferBatchForMultipleRelatedWrites:
         'Multiple related reactive writes happen here without batch. If '
         'external listeners observe intermediate states, consider wrapping '
-        'these writes in batch(() { ... }).',
+        'these writes in Observable.batch(() { ... }).',
     DiagnosticMessageKey.preferAssignAllForReactiveListReplace:
         'Prefer assignAll(...) or assign(...) when replacing an ObservableList. '
         'Calling clear() and then add/addAll notifies in two separate '

@@ -1,12 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
-- Fixed preset configuration to use `custom_lint.rules`, the configuration
-  shape exposed by `custom_lint`.
+Breaking configuration change:
+
+- Presets and localization now use `custom_lint.rules`, the configuration
+  shape exposed by `custom_lint`. Projects that configured Portuguese messages
+  with a top-level `all_observer:` key must move that option under
+  `custom_lint.rules`:
+
+  ```yaml
+  custom_lint:
+    rules:
+      - all_observer:
+        language: pt-BR
+  ```
+
+Fixes and improvements:
+
 - Fixed Brazilian Portuguese diagnostic opt-in documentation and tests.
 - `recommended.yaml`, `strict.yaml`, and `all.yaml` now explicitly disable
   unspecified lint rules so each preset enables only its intended rules.
+- Added a quick fix for `prefer_batch_for_multiple_related_writes` that wraps
+  consecutive reactive writes in `Observable.batch(() { ... });`.
+- Fixed `prefer_batch_for_multiple_related_writes` so it no longer reports
+  writes that are already inside `Observable.batch`.
 
 ## 0.3.0
 

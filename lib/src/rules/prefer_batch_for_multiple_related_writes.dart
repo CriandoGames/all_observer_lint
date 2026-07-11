@@ -3,6 +3,7 @@ import 'package:analyzer/error/error.dart' hide LintCode;
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 
+import '../fixes/wrap_in_observable_batch_fix.dart';
 import '../localization/diagnostic_message_key.dart';
 import '../localization/diagnostic_messages.dart';
 import '../localization/locale_resolver.dart';
@@ -47,6 +48,8 @@ class PreferBatchForMultipleRelatedWrites extends DartLintRule {
     const checker = AllObserverTypeChecker();
 
     context.registry.addBlock((block) {
+      if (_isInsideBatchCallback(block, checker)) return;
+
       final statements = block.statements;
       var index = 0;
       while (index < statements.length) {
@@ -63,6 +66,9 @@ class PreferBatchForMultipleRelatedWrites extends DartLintRule {
       }
     });
   }
+
+  @override
+  List<Fix> getFixes() => [WrapInObservableBatchFix()];
 
   bool _isPlainObservableValueWrite(
     Statement statement,
@@ -86,5 +92,20 @@ class PreferBatchForMultipleRelatedWrites extends DartLintRule {
     }
     if (target == null || propertyName != 'value') return false;
     return checker.isObservableType(target.staticType);
+  }
+
+  bool _isInsideBatchCallback(Block block, AllObserverTypeChecker checker) {
+    AstNode? current = block.parent;
+    while (current != null) {
+      if (current is FunctionExpression) {
+        final parent = current.parent;
+        if (parent is ArgumentList && parent.parent is MethodInvocation) {
+          final invocation = parent.parent as MethodInvocation;
+          if (checker.isBatchInvocation(invocation)) return true;
+        }
+      }
+      current = current.parent;
+    }
+    return false;
   }
 }
