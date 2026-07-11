@@ -32,5 +32,33 @@ jobs:
       - name: Install dependencies (example)
         run: cd example && flutter pub get
 
+      - name: Analyze
+        run: dart analyze
+
       - name: Run tests
+        run: dart test
+
+  lower-bounds:
+    name: Lower bounds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install minimum dependency versions
+        run: dart pub downgrade
+
+      - name: Install fixture dependencies
+        run: |
+          cd test/fixtures/fake_all_observer && flutter pub get
+          cd ../another_package && dart pub get
+          cd ../consumer && flutter pub get
+
+      - name: Analyze with minimum versions
+        run: dart analyze
+
+      - name: Test with minimum versions
         run: dart test
