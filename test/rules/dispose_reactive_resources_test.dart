@@ -18,20 +18,19 @@ void main() {
 
   group('dispose_reactive_resources', () {
     test('flags workers and ObservableStream fields never disposed', () async {
-      final result =
-          await resolveFixture('dispose_reactive_resources_invalid.dart');
+      final result = await resolveFixture(
+        'dispose_reactive_resources_invalid.dart',
+      );
       expect(countOffenses(result.unit), 2);
     });
 
-    test(
-      'does not flag disposed resources, or classes without their own '
-      'dispose() (ownership ambiguous)',
-      () async {
-        final result =
-            await resolveFixture('dispose_reactive_resources_valid.dart');
-        expect(countOffenses(result.unit), 0);
-      },
-    );
+    test('does not flag disposed resources, or classes without their own '
+        'dispose() (ownership ambiguous)', () async {
+      final result = await resolveFixture(
+        'dispose_reactive_resources_valid.dart',
+      );
+      expect(countOffenses(result.unit), 0);
+    });
   });
 }
 

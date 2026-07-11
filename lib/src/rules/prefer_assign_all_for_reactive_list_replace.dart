@@ -16,7 +16,7 @@ import '../utils/all_observer_type_checker.dart';
 /// `assignAll(...)` express the intent and notify once.
 class PreferAssignAllForReactiveListReplace extends DartLintRule {
   PreferAssignAllForReactiveListReplace({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'prefer_assign_all_for_reactive_list_replace';
 
@@ -97,19 +97,19 @@ class _Target {
 
 Element? _targetElement(Expression expression) {
   if (expression is SimpleIdentifier) {
-    return _canonicalElement(expression.staticElement);
+    return _canonicalElement(expression.element);
   }
   if (expression is PropertyAccess && expression.target is ThisExpression) {
-    return _canonicalElement(expression.propertyName.staticElement);
+    return _canonicalElement(expression.propertyName.element);
   }
   if (expression is PrefixedIdentifier) {
-    return _canonicalElement(expression.staticElement);
+    return _canonicalElement(expression.element);
   }
   return null;
 }
 
 Element? _canonicalElement(Element? element) {
-  if (element is PropertyAccessorElement) return element.variable2;
+  if (element is PropertyAccessorElement) return element.variable;
   return element;
 }
 

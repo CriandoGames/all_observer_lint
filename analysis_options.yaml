@@ -13,6 +13,7 @@ analyzer:
     # through the old element model. Keep the usage centralized in src/utils
     # and revisit when moving to analyzer 8+.
     deprecated_member_use: ignore
+    experimental_member_use: ignore
   exclude:
     - "test/fixtures/**"
     - "example/**"

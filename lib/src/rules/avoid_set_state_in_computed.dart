@@ -19,7 +19,7 @@ import '../utils/computed_callback_finder.dart';
 /// See `documentation/en/rules/avoid_set_state_in_computed.md`.
 class AvoidSetStateInComputed extends DartLintRule {
   AvoidSetStateInComputed({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_set_state_in_computed';
 
@@ -27,8 +27,9 @@ class AvoidSetStateInComputed extends DartLintRule {
     final messages = DiagnosticMessages.forLocale(resolveLocale(configs));
     return LintCode(
       name: ruleName,
-      problemMessage:
-          messages.message(DiagnosticMessageKey.setStateInsideComputed),
+      problemMessage: messages.message(
+        DiagnosticMessageKey.setStateInsideComputed,
+      ),
       errorSeverity: ErrorSeverity.WARNING,
     );
   }

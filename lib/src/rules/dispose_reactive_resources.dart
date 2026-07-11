@@ -31,7 +31,7 @@ import '../utils/all_observer_type_checker.dart';
 /// See `documentation/en/rules/dispose_reactive_resources.md`.
 class DisposeReactiveResources extends DartLintRule {
   DisposeReactiveResources({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'dispose_reactive_resources';
   static const String disposeMethodName = 'dispose';

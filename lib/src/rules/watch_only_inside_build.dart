@@ -21,7 +21,7 @@ import '../utils/build_context_detector.dart';
 /// See `documentation/en/rules/watch_only_inside_build.md`.
 class WatchOnlyInsideBuild extends DartLintRule {
   WatchOnlyInsideBuild({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'watch_only_inside_build';
 
@@ -83,7 +83,8 @@ class WatchOnlyInsideBuild extends DartLintRule {
     if (method.name.lexeme == 'build') return false;
     final parameters = method.parameters?.parameters ?? const [];
     for (final parameter in parameters) {
-      if (parameter.declaredElement?.type.element?.name == 'BuildContext') {
+      if (parameter.declaredFragment?.element.type.element?.name ==
+          'BuildContext') {
         return true;
       }
     }

@@ -27,7 +27,7 @@ import '../utils/reactive_write_detector.dart';
 /// See `documentation/en/rules/avoid_reactive_write_in_computed.md`.
 class AvoidReactiveWriteInComputed extends DartLintRule {
   AvoidReactiveWriteInComputed({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_reactive_write_in_computed';
 
@@ -68,8 +68,9 @@ class AvoidReactiveWriteInComputed extends DartLintRule {
 
   FunctionExpression? _firstFunctionArgument(InstanceCreationExpression node) {
     for (final argument in node.argumentList.arguments) {
-      final value =
-          argument is NamedExpression ? argument.expression : argument;
+      final value = argument is NamedExpression
+          ? argument.expression
+          : argument;
       if (value is FunctionExpression) return value;
     }
     return null;

@@ -16,17 +16,23 @@ void main() {
   }
 
   group('prefer_assign_all_for_reactive_list_replace', () {
-    test('flags clear followed by add/addAll on the same reactive list',
-        () async {
-      final result = await resolveFixture('reactive_list_replace_invalid.dart');
-      expect(countOffenses(result.unit), 3);
-    });
+    test(
+      'flags clear followed by add/addAll on the same reactive list',
+      () async {
+        final result = await resolveFixture(
+          'reactive_list_replace_invalid.dart',
+        );
+        expect(countOffenses(result.unit), 3);
+      },
+    );
 
-    test('does not flag assignAll, clear-only, non-reactive, or non-immediate',
-        () async {
-      final result = await resolveFixture('reactive_list_replace_valid.dart');
-      expect(countOffenses(result.unit), 0);
-    });
+    test(
+      'does not flag assignAll, clear-only, non-reactive, or non-immediate',
+      () async {
+        final result = await resolveFixture('reactive_list_replace_valid.dart');
+        expect(countOffenses(result.unit), 0);
+      },
+    );
   });
 }
 
@@ -90,19 +96,19 @@ class _Target {
 
 Element? _targetElement(Expression expression) {
   if (expression is SimpleIdentifier) {
-    return _canonicalElement(expression.staticElement);
+    return _canonicalElement(expression.element);
   }
   if (expression is PropertyAccess && expression.target is ThisExpression) {
-    return _canonicalElement(expression.propertyName.staticElement);
+    return _canonicalElement(expression.propertyName.element);
   }
   if (expression is PrefixedIdentifier) {
-    return _canonicalElement(expression.staticElement);
+    return _canonicalElement(expression.element);
   }
   return null;
 }
 
 Element? _canonicalElement(Element? element) {
-  if (element is PropertyAccessorElement) return element.variable2;
+  if (element is PropertyAccessorElement) return element.variable;
   return element;
 }
 

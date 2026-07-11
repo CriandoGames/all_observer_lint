@@ -16,7 +16,7 @@ import '../utils/self_referencing_computed_detector.dart';
 /// See `documentation/en/rules/self_referencing_computed.md`.
 class SelfReferencingComputed extends DartLintRule {
   SelfReferencingComputed({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'self_referencing_computed';
 

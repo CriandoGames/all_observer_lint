@@ -31,8 +31,9 @@ Future<ResolvedUnitResult> resolveFixture(String fileName) async {
     );
   }
 
-  final collection = _collection ??=
-      AnalysisContextCollection(includedPaths: [consumerFixtureRoot]);
+  final collection = _collection ??= AnalysisContextCollection(
+    includedPaths: [consumerFixtureRoot],
+  );
   final path = p.normalize(p.join(consumerFixtureRoot, 'lib', fileName));
   final context = collection.contextFor(path);
   final result = await context.currentSession.getResolvedUnit(path);

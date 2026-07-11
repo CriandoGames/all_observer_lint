@@ -24,7 +24,7 @@ import '../utils/all_observer_type_checker.dart';
 /// See `documentation/en/rules/prefer_computed_for_derived_state.md`.
 class PreferComputedForDerivedState extends DartLintRule {
   PreferComputedForDerivedState({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'prefer_computed_for_derived_state';
 

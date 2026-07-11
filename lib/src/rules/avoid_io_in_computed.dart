@@ -27,7 +27,7 @@ import '../utils/computed_callback_finder.dart';
 /// See `documentation/en/rules/avoid_io_in_computed.md`.
 class AvoidIoInComputed extends DartLintRule {
   AvoidIoInComputed({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_io_in_computed';
   static const String _dartIoUriPrefix = 'dart:io';
@@ -72,7 +72,7 @@ class AvoidIoInComputed extends DartLintRule {
   }
 
   bool _isDartIoCall(MethodInvocation node) =>
-      _isDartIoElement(node.methodName.staticElement);
+      _isDartIoElement(node.methodName.element);
 
   bool _isImmediateTargetOfDartIoMethodInvocation(
     InstanceCreationExpression node,

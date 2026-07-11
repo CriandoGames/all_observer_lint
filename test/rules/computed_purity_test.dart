@@ -20,10 +20,13 @@ void main() {
   group('avoid_reactive_write_in_computed', () {
     int countWrites(CompilationUnit unit) {
       var count = 0;
-      unit.accept(_ComputedVisitor(checker, (callback) {
-        count +=
-            writeDetector.findIn(callback, includeNestedFunctions: true).length;
-      }));
+      unit.accept(
+        _ComputedVisitor(checker, (callback) {
+          count += writeDetector
+              .findIn(callback, includeNestedFunctions: true)
+              .length;
+        }),
+      );
       return count;
     }
 
@@ -34,8 +37,7 @@ void main() {
       expect(countWrites(result.unit), 2);
     });
 
-    test(
-        'does not flag pure derivations, nested pure closures, or '
+    test('does not flag pure derivations, nested pure closures, or '
         'unrelated .value fields', () async {
       final result = await resolveFixture('computed_purity_valid.dart');
       expect(countWrites(result.unit), 0);
@@ -45,11 +47,13 @@ void main() {
   group('avoid_set_state_in_computed', () {
     int countSetState(CompilationUnit unit) {
       var count = 0;
-      unit.accept(_MethodInvocationInComputedVisitor(
-        finder,
-        (node) => checker.isSetStateInvocation(node),
-        () => count++,
-      ));
+      unit.accept(
+        _MethodInvocationInComputedVisitor(
+          finder,
+          (node) => checker.isSetStateInvocation(node),
+          () => count++,
+        ),
+      );
       return count;
     }
 
@@ -67,11 +71,13 @@ void main() {
   group('avoid_worker_creation_in_computed', () {
     int countWorkers(CompilationUnit unit) {
       var count = 0;
-      unit.accept(_MethodInvocationInComputedVisitor(
-        finder,
-        (node) => checker.isEffectOrWorkerInvocation(node),
-        () => count++,
-      ));
+      unit.accept(
+        _MethodInvocationInComputedVisitor(
+          finder,
+          (node) => checker.isEffectOrWorkerInvocation(node),
+          () => count++,
+        ),
+      );
       return count;
     }
 
@@ -116,8 +122,9 @@ class _ComputedVisitor extends RecursiveAstVisitor<void> {
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     if (_checker.isComputedCreation(node)) {
       for (final argument in node.argumentList.arguments) {
-        final value =
-            argument is NamedExpression ? argument.expression : argument;
+        final value = argument is NamedExpression
+            ? argument.expression
+            : argument;
         if (value is FunctionExpression) {
           _onCallback(value);
           break;
@@ -130,7 +137,10 @@ class _ComputedVisitor extends RecursiveAstVisitor<void> {
 
 class _MethodInvocationInComputedVisitor extends RecursiveAstVisitor<void> {
   _MethodInvocationInComputedVisitor(
-      this._finder, this._matches, this._onOffense);
+    this._finder,
+    this._matches,
+    this._onOffense,
+  );
 
   final ComputedCallbackFinder _finder;
   final bool Function(MethodInvocation) _matches;
@@ -159,7 +169,7 @@ class _IoVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    final library = node.methodName.staticElement?.library?.identifier;
+    final library = node.methodName.element?.library?.identifier;
     if (library != null &&
         library.startsWith('dart:io') &&
         _finder.isInsideComputedCallback(node)) {
@@ -190,7 +200,7 @@ class _IoVisitor extends RecursiveAstVisitor<void> {
     if (parent is! MethodInvocation || !identical(parent.target, node)) {
       return false;
     }
-    final library = parent.methodName.staticElement?.library?.identifier;
+    final library = parent.methodName.element?.library?.identifier;
     return library != null && library.startsWith('dart:io');
   }
 }

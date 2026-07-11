@@ -53,23 +53,23 @@ class Disposer {
 
 Disposer effect(void Function() callback) => Disposer();
 Disposer ever<T>(
-        CoreObservable<T> observable, void Function(T value) onChange) =>
-    Disposer();
+  CoreObservable<T> observable,
+  void Function(T value) onChange,
+) => Disposer();
 Disposer once<T>(
-        CoreObservable<T> observable, void Function(T value) onChange) =>
-    Disposer();
+  CoreObservable<T> observable,
+  void Function(T value) onChange,
+) => Disposer();
 Disposer debounce<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
   Duration time = const Duration(milliseconds: 300),
-}) =>
-    Disposer();
+}) => Disposer();
 Disposer interval<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
   Duration time = const Duration(seconds: 1),
-}) =>
-    Disposer();
+}) => Disposer();
 
 void batch(void Function() callback) => callback();
 

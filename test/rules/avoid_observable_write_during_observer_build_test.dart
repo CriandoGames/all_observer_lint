@@ -12,28 +12,30 @@ void main() {
 
   int countOffenses(CompilationUnit unit) {
     var count = 0;
-    unit.accept(_Visitor(checker, (callback) {
-      count +=
-          writeDetector.findIn(callback, includeNestedFunctions: false).length;
-    }));
+    unit.accept(
+      _Visitor(checker, (callback) {
+        count += writeDetector
+            .findIn(callback, includeNestedFunctions: false)
+            .length;
+      }),
+    );
     return count;
   }
 
   group('avoid_observable_write_during_observer_build', () {
-    test('flags conditional and unconditional writes inside Observer',
-        () async {
-      final result = await resolveFixture('observer_write_invalid.dart');
-      expect(countOffenses(result.unit), 2);
-    });
-
     test(
-      'does not flag reads, or writes deferred to an event-handler '
-      'closure declared inside Observer',
+      'flags conditional and unconditional writes inside Observer',
       () async {
-        final result = await resolveFixture('observer_write_valid.dart');
-        expect(countOffenses(result.unit), 0);
+        final result = await resolveFixture('observer_write_invalid.dart');
+        expect(countOffenses(result.unit), 2);
       },
     );
+
+    test('does not flag reads, or writes deferred to an event-handler '
+        'closure declared inside Observer', () async {
+      final result = await resolveFixture('observer_write_valid.dart');
+      expect(countOffenses(result.unit), 0);
+    });
   });
 }
 
@@ -47,8 +49,9 @@ class _Visitor extends RecursiveAstVisitor<void> {
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     if (_checker.isObserverWidgetCreation(node)) {
       for (final argument in node.argumentList.arguments) {
-        final value =
-            argument is NamedExpression ? argument.expression : argument;
+        final value = argument is NamedExpression
+            ? argument.expression
+            : argument;
         if (value is FunctionExpression) {
           _onCallback(value);
           break;

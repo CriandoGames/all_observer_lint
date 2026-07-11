@@ -20,7 +20,7 @@ import '../utils/build_context_detector.dart';
 /// See `documentation/en/rules/avoid_reactive_creation_in_build.md`.
 class AvoidReactiveCreationInBuild extends DartLintRule {
   AvoidReactiveCreationInBuild({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_reactive_creation_in_build';
 
@@ -28,8 +28,9 @@ class AvoidReactiveCreationInBuild extends DartLintRule {
     final messages = DiagnosticMessages.forLocale(resolveLocale(configs));
     return LintCode(
       name: ruleName,
-      problemMessage:
-          messages.message(DiagnosticMessageKey.reactiveCreationInsideBuild),
+      problemMessage: messages.message(
+        DiagnosticMessageKey.reactiveCreationInsideBuild,
+      ),
       errorSeverity: ErrorSeverity.WARNING,
     );
   }
@@ -44,7 +45,8 @@ class AvoidReactiveCreationInBuild extends DartLintRule {
     final finder = RebuildScopeFinder(checker);
 
     context.registry.addInstanceCreationExpression((node) {
-      final isReactiveCreation = checker.isObservableCreation(node) ||
+      final isReactiveCreation =
+          checker.isObservableCreation(node) ||
           checker.isComputedCreation(node) ||
           checker.isObservableFutureCreation(node) ||
           checker.isObservableStreamCreation(node);

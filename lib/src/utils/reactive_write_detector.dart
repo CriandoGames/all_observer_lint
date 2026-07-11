@@ -91,9 +91,7 @@ class _ReactiveWriteVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitAssignmentExpression(AssignmentExpression node) {
     if (_isReactiveValueAccess(node.leftHandSide)) {
-      occurrences.add(
-        ReactiveWriteOccurrence(node, 'assignment to .value'),
-      );
+      occurrences.add(ReactiveWriteOccurrence(node, 'assignment to .value'));
     }
     super.visitAssignmentExpression(node);
   }

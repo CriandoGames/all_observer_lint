@@ -23,10 +23,7 @@ class SelfReferencingComputedDetector {
     final callback = _firstFunctionArgument(node);
     if (callback == null) return false;
 
-    final visitor = _SelfReferenceVisitor(
-      callback: callback,
-      owner: owner,
-    );
+    final visitor = _SelfReferenceVisitor(callback: callback, owner: owner);
     callback.body.accept(visitor);
     return visitor.found;
   }
@@ -46,18 +43,19 @@ class SelfReferencingComputedDetector {
 
   Element? _assignableElement(Expression expression) {
     if (expression is SimpleIdentifier) {
-      return _canonicalElement(expression.staticElement);
+      return _canonicalElement(expression.element);
     }
     if (expression is PropertyAccess && expression.target is ThisExpression) {
-      return _canonicalElement(expression.propertyName.staticElement);
+      return _canonicalElement(expression.propertyName.element);
     }
     return null;
   }
 
   FunctionExpression? _firstFunctionArgument(InstanceCreationExpression node) {
     for (final argument in node.argumentList.arguments) {
-      final value =
-          argument is NamedExpression ? argument.expression : argument;
+      final value = argument is NamedExpression
+          ? argument.expression
+          : argument;
       if (value is FunctionExpression) return value;
     }
     return null;
@@ -65,10 +63,7 @@ class SelfReferencingComputedDetector {
 }
 
 class _SelfReferenceVisitor extends RecursiveAstVisitor<void> {
-  _SelfReferenceVisitor({
-    required this.callback,
-    required this.owner,
-  });
+  _SelfReferenceVisitor({required this.callback, required this.owner});
 
   final FunctionExpression callback;
   final Element owner;
@@ -89,7 +84,7 @@ class _SelfReferenceVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitPrefixedIdentifier(PrefixedIdentifier node) {
     if (node.identifier.name == 'value' &&
-        _sameElement(node.prefix.staticElement, owner)) {
+        _sameElement(node.prefix.element, owner)) {
       found = true;
       return;
     }
@@ -108,17 +103,17 @@ class _SelfReferenceVisitor extends RecursiveAstVisitor<void> {
 
   Element? _targetElement(Expression? expression) {
     if (expression is SimpleIdentifier) {
-      return _canonicalElement(expression.staticElement);
+      return _canonicalElement(expression.element);
     }
     if (expression is PropertyAccess && expression.target is ThisExpression) {
-      return _canonicalElement(expression.propertyName.staticElement);
+      return _canonicalElement(expression.propertyName.element);
     }
     return null;
   }
 }
 
 Element? _canonicalElement(Element? element) {
-  if (element is PropertyAccessorElement) return element.variable2;
+  if (element is PropertyAccessorElement) return element.variable;
   return element;
 }
 

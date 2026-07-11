@@ -48,10 +48,7 @@ class AddDisposeCallFix extends DartFix {
       );
       changeBuilder.addDartFileEdit((builder) {
         final insertOffset = body.block.leftBracket.end;
-        builder.addSimpleInsertion(
-          insertOffset,
-          '\n    $fieldName.dispose();',
-        );
+        builder.addSimpleInsertion(insertOffset, '\n    $fieldName.dispose();');
       });
     });
   }

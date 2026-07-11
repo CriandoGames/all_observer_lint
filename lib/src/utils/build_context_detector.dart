@@ -83,12 +83,12 @@ class RebuildScopeFinder {
     final parameters = method.parameters?.parameters;
     if (parameters == null || parameters.length != 1) return false;
 
-    final paramElement = parameters.first.declaredElement;
+    final paramElement = parameters.first.declaredFragment?.element;
     final paramType = paramElement?.type;
     if (paramType?.element?.name != 'BuildContext') return false;
     if (!_checker.isFlutterFrameworkElement(paramType!.element)) return false;
 
-    final returnType = method.declaredElement?.returnType;
+    final returnType = method.declaredFragment?.element.returnType;
     if (returnType?.element?.name != 'Widget') return false;
     return _checker.isFlutterFrameworkElement(returnType!.element);
   }

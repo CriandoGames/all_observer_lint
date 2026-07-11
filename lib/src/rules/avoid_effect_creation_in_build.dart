@@ -18,7 +18,7 @@ import '../utils/build_context_detector.dart';
 /// See `documentation/en/rules/avoid_effect_creation_in_build.md`.
 class AvoidEffectCreationInBuild extends DartLintRule {
   AvoidEffectCreationInBuild({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_effect_creation_in_build';
 
@@ -26,8 +26,9 @@ class AvoidEffectCreationInBuild extends DartLintRule {
     final messages = DiagnosticMessages.forLocale(resolveLocale(configs));
     return LintCode(
       name: ruleName,
-      problemMessage:
-          messages.message(DiagnosticMessageKey.effectCreationInsideBuild),
+      problemMessage: messages.message(
+        DiagnosticMessageKey.effectCreationInsideBuild,
+      ),
       errorSeverity: ErrorSeverity.WARNING,
     );
   }

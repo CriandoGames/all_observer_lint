@@ -22,7 +22,7 @@ import '../utils/all_observer_type_checker.dart';
 /// `documentation/en/rules/prefer_batch_for_multiple_related_writes.md`.
 class PreferBatchForMultipleRelatedWrites extends DartLintRule {
   PreferBatchForMultipleRelatedWrites({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'prefer_batch_for_multiple_related_writes';
   static const int _minimumConsecutiveWrites = 3;

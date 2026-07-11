@@ -17,27 +17,21 @@ void main() {
   }
 
   group('avoid_reactive_creation_in_build', () {
-    test(
-      'flags .obs, Computed, ObservableFuture created in build/Observer, '
-      'including aliased imports',
-      () async {
-        final result = await resolveFixture(
-          'reactive_creation_in_build_invalid.dart',
-        );
-        expect(countOffenses(result.unit), 5);
-      },
-    );
+    test('flags .obs, Computed, ObservableFuture created in build/Observer, '
+        'including aliased imports', () async {
+      final result = await resolveFixture(
+        'reactive_creation_in_build_invalid.dart',
+      );
+      expect(countOffenses(result.unit), 5);
+    });
 
-    test(
-      'does not flag fields, event-handler closures, or homonymous symbols '
-      'from another package',
-      () async {
-        final result = await resolveFixture(
-          'reactive_creation_in_build_valid.dart',
-        );
-        expect(countOffenses(result.unit), 0);
-      },
-    );
+    test('does not flag fields, event-handler closures, or homonymous symbols '
+        'from another package', () async {
+      final result = await resolveFixture(
+        'reactive_creation_in_build_valid.dart',
+      );
+      expect(countOffenses(result.unit), 0);
+    });
   });
 }
 
@@ -50,7 +44,8 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final isReactive = _checker.isObservableCreation(node) ||
+    final isReactive =
+        _checker.isObservableCreation(node) ||
         _checker.isComputedCreation(node) ||
         _checker.isObservableFutureCreation(node) ||
         _checker.isObservableStreamCreation(node);

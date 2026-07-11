@@ -45,10 +45,7 @@ class AllObserverTypeChecker {
     'CoreObservable',
   };
 
-  static const Set<String> _computedClassNames = {
-    'Computed',
-    'CoreComputed',
-  };
+  static const Set<String> _computedClassNames = {'Computed', 'CoreComputed'};
 
   static const Set<String> _observableListClassNames = {
     'ObservableList',
@@ -160,15 +157,15 @@ class AllObserverTypeChecker {
   bool isObsExtensionAccess(Expression expression) {
     Element? element;
     if (expression is PropertyAccess) {
-      element = expression.propertyName.staticElement;
+      element = expression.propertyName.element;
     } else if (expression is PrefixedIdentifier) {
-      element = expression.identifier.staticElement;
+      element = expression.identifier.element;
     }
-    if (element is! PropertyAccessorElement || !element.isGetter) {
+    if (element is! GetterElement) {
       return false;
     }
     if (element.name != _obsExtensionGetterName) return false;
-    final enclosing = element.enclosingElement3;
+    final enclosing = element.enclosingElement;
     return enclosing is ExtensionElement && _isFromAllObserver(enclosing);
   }
 
@@ -188,8 +185,7 @@ class AllObserverTypeChecker {
   // Function/method invocations.
   // ---------------------------------------------------------------------
 
-  Element? _invokedElement(MethodInvocation node) =>
-      node.methodName.staticElement;
+  Element? _invokedElement(MethodInvocation node) => node.methodName.element;
 
   /// Whether [node] invokes the `effect(...)` function from `all_observer`.
   bool isEffectInvocation(MethodInvocation node) {
@@ -222,7 +218,7 @@ class AllObserverTypeChecker {
     // Extension methods resolve their enclosing element to the extension
     // itself; also check that indirection explicitly.
     if (element is MethodElement) {
-      final enclosing = element.enclosingElement3;
+      final enclosing = element.enclosingElement;
       if (enclosing is ExtensionElement && _isFromAllObserver(enclosing)) {
         return true;
       }

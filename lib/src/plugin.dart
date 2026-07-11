@@ -24,24 +24,24 @@ import 'rules/watch_only_inside_build.dart';
 class AllObserverLintPlugin extends PluginBase {
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
-        //localização e ciclo de vida.
-        AvoidReactiveCreationInBuild(configs: configs),
-        AvoidEffectCreationInBuild(configs: configs),
-        WatchOnlyInsideBuild(configs: configs),
-        DisposeReactiveResources(configs: configs),
+    //localização e ciclo de vida.
+    AvoidReactiveCreationInBuild(configs: configs),
+    AvoidEffectCreationInBuild(configs: configs),
+    WatchOnlyInsideBuild(configs: configs),
+    DisposeReactiveResources(configs: configs),
 
-        //pureza reativa (avoid_side_effects_in_computed split
-        // into narrower, individually testable/provable rules).
-        AvoidReactiveWriteInComputed(configs: configs),
-        AvoidSetStateInComputed(configs: configs),
-        AvoidWorkerCreationInComputed(configs: configs),
-        AvoidIoInComputed(configs: configs),
-        AvoidObservableWriteDuringObserverBuild(configs: configs),
-        SelfReferencingComputed(configs: configs),
+    //pureza reativa (avoid_side_effects_in_computed split
+    // into narrower, individually testable/provable rules).
+    AvoidReactiveWriteInComputed(configs: configs),
+    AvoidSetStateInComputed(configs: configs),
+    AvoidWorkerCreationInComputed(configs: configs),
+    AvoidIoInComputed(configs: configs),
+    AvoidObservableWriteDuringObserverBuild(configs: configs),
+    SelfReferencingComputed(configs: configs),
 
-        // Strict / experimental (info, not in recommended).
-        PreferComputedForDerivedState(configs: configs),
-        PreferBatchForMultipleRelatedWrites(configs: configs),
-        PreferAssignAllForReactiveListReplace(configs: configs),
-      ];
+    // Strict / experimental (info, not in recommended).
+    PreferComputedForDerivedState(configs: configs),
+    PreferBatchForMultipleRelatedWrites(configs: configs),
+    PreferAssignAllForReactiveListReplace(configs: configs),
+  ];
 }

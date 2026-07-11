@@ -21,22 +21,21 @@ void main() {
   }
 
   group('watch_only_inside_build', () {
-    test(
-      'flags watch(context) called from a non-build method using an '
-      'ambient context (e.g. State.context)',
-      () async {
-        final result =
-            await resolveFixture('watch_only_inside_build_invalid.dart');
-        expect(countOffenses(result.unit), 1);
-      },
-    );
+    test('flags watch(context) called from a non-build method using an '
+        'ambient context (e.g. State.context)', () async {
+      final result = await resolveFixture(
+        'watch_only_inside_build_invalid.dart',
+      );
+      expect(countOffenses(result.unit), 1);
+    });
 
     test(
       'does not flag watch(context) inside build, inside Observer, or in a '
       'method that itself only accepts BuildContext (ambiguous, skipped)',
       () async {
-        final result =
-            await resolveFixture('watch_only_inside_build_valid.dart');
+        final result = await resolveFixture(
+          'watch_only_inside_build_valid.dart',
+        );
         expect(countOffenses(result.unit), 0);
       },
     );
@@ -79,7 +78,8 @@ class _Visitor extends RecursiveAstVisitor<void> {
   bool _looksAmbiguous(MethodDeclaration method) {
     if (method.name.lexeme == 'build') return false;
     for (final parameter in method.parameters?.parameters ?? const []) {
-      if (parameter.declaredElement?.type.element?.name == 'BuildContext') {
+      if (parameter.declaredFragment?.element.type.element?.name ==
+          'BuildContext') {
         return true;
       }
     }

@@ -19,7 +19,7 @@ import '../utils/computed_callback_finder.dart';
 /// See `documentation/en/rules/avoid_worker_creation_in_computed.md`.
 class AvoidWorkerCreationInComputed extends DartLintRule {
   AvoidWorkerCreationInComputed({required CustomLintConfigs configs})
-      : super(code: _buildCode(configs));
+    : super(code: _buildCode(configs));
 
   static const ruleName = 'avoid_worker_creation_in_computed';
 
