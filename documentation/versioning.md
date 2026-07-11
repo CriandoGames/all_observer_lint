@@ -2,10 +2,10 @@
 
 ## Supported Tooling
 
-- Dart SDK: `>=3.3.0 <4.0.0`
-- `analyzer`: `^7.0.0`
-- `custom_lint_builder`: `^0.7.0`
-- Consumer-side `custom_lint`: `^0.7.0`
+- Dart SDK: `>=3.10.0 <4.0.0`
+- `analyzer`: `>=8.0.0 <9.0.0`
+- `custom_lint_builder`: `0.8.1`
+- Consumer-side `custom_lint`: `^0.8.1`
 
 `all_observer_lint` has no Flutter SDK dependency. Flutter is only required in
 consumer projects that use Flutter-specific rules such as build-context and

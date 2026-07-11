@@ -63,7 +63,11 @@ class SearchBadExample extends StatefulWidget {
 }
 
 class _SearchBadExampleState extends State<SearchBadExample> {
-  late final Disposer worker = debounce(widget.query, (value) {});
+  late final Worker worker = debounce(
+    widget.query,
+    (value) {},
+    time: const Duration(milliseconds: 300),
+  );
 
   @override
   void dispose() {
@@ -84,7 +88,11 @@ class SearchGoodExample extends StatefulWidget {
 }
 
 class _SearchGoodExampleState extends State<SearchGoodExample> {
-  late final Disposer worker = debounce(widget.query, (value) {});
+  late final Worker worker = debounce(
+    widget.query,
+    (value) {},
+    time: const Duration(milliseconds: 300),
+  );
 
   @override
   void dispose() {

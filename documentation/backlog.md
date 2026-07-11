@@ -11,9 +11,9 @@ The original draft of this project bundled every `Computed` purity concern
 into a single, broad `avoid_side_effects_in_computed` rule. "Side effect"
 is too broad a category to ever prove deterministically fatal, which is a
 prerequisite for anything stronger than `warning` in this project's
-severity policy (section 22–25 of the brief). It was split into:
+severity policy. It was split into:
 
-- `avoid_reactive_write_in_computed` — narrow, testable, and the most
+- `avoid_reactive_write_in_computed` - narrow, testable, and the most
   plausible candidate for eventual `error` promotion once a reproducible
   `all_observer` runtime failure is documented.
 - `avoid_set_state_in_computed`
@@ -26,26 +26,28 @@ group.
 
 ## Rule candidates requiring proof before promotion to `error`
 
-Per section 23 of the brief, none of the below may become `error` without:
-a reproducible minimal example, a named violated invariant, a runtime
-regression test in the `all_observer` repository itself, a lint-side test
-suite (positive/negative/aliases/subclasses), and a documented technical
-review answering the eight questions in section 23.5.
+None of the below may become `error` without: a reproducible minimal example,
+a named violated invariant, a runtime regression test in the `all_observer`
+repository itself, a lint-side test suite (positive/negative/aliases/
+subclasses), and a documented technical review.
 
-- **`self_referencing_computed`** — implemented in v0.1.0 as an `error` for
+- **`self_referencing_computed`** - implemented in v0.1.0 as an `error` for
   direct self-dependencies where a `Computed(...)` assigned to a variable/field
   reads that same symbol's `.value` inside its callback. Longer computed cycles
   such as `a -> b -> a` remain future work.
-- **`unconditional_reactive_write_during_observer_build`** — the subset of
+- **`unconditional_reactive_write_during_observer_build`** - the subset of
   `avoid_observable_write_during_observer_build` where the write is
   unconditional and targets a dependency the same callback unconditionally
   reads. See that rule's doc for why it wasn't split out yet.
-- **`observable_write_during_computed` (stricter form)** — same idea for
+- **`observable_write_during_computed` (stricter form)** - same idea for
   `avoid_reactive_write_in_computed`: needs proof of whether the write
   causes unbounded recomputation, is intercepted by the runtime, or
   silently no-ops, before any subset of it can move to `error`.
 
-## Detection coverage gaps (all current severities stay accurate; these are false-negative risks, not false-positive risks)
+## Detection coverage gaps
+
+All current severities stay accurate; these are false-negative risks, not
+false-positive risks.
 
 - Reactive resource creation/effect registration hidden behind a factory
   or helper function called from `build` is not detected
@@ -60,10 +62,9 @@ review answering the eight questions in section 23.5.
   `prefer_assign_all_for_reactive_list_replace`, but general collection write
   detection remains future work.
 - `avoid_io_in_computed` only recognizes `dart:io` and `await`; common HTTP
-  client packages, platform channels, and database packages are not
-  covered.
+  client packages, platform channels, and database packages are not covered.
 - A closure that is textually nested inside a `Computed` callback but only
-  runs asynchronously/deferred (e.g. `Future(...).then(...)`) is still
+  runs asynchronously/deferred (for example, `Future(...).then(...)`) is still
   treated as "inside" the callback by `ComputedCallbackFinder`. This can
   produce a false positive in that specific, fairly rare shape; documented
   per-rule.
@@ -73,52 +74,36 @@ review answering the eight questions in section 23.5.
 - **Resolved:** the initial `custom_lint_builder: ^0.6.4` /
   `custom_lint_core: ^0.6.4` pin failed `pub get` on a real machine with
   `could not find package _macros in the Dart SDK`. Root cause: analyzer
-  versions in the `custom_lint_core` 0.6.5–0.6.10 range depend on a
-  `macros` package version that requires a `_macros` package bundled only
-  in certain Dart SDK builds, not present on a plain stable SDK. Fixed by
-  pinning `analyzer: ^7.0.0` and `custom_lint_builder`/`custom_lint_core`:
-  `^0.7.0` (confirmed against the real pub.dev version history), which
-  resolves to `custom_lint_core` 0.7.1+ and does not touch that broken
-  `macros`/`_macros` chain. `example/pubspec.yaml`'s `custom_lint`
-  dependency was updated to match.
-- Still not verified in this environment (no local Dart/Flutter SDK): a
-  full `pub get` + `dart analyze` + `dart test` run across the root
-  package, `test/fixtures/*`, and `example/`. The `test` package was also
-  pinned to `>=1.24.0 <1.26.0` after an editor auto-upgrade briefly pulled
-  in a `test` version requiring Dart SDK `>=3.10.0`, which was newer than
-  the SDK actually installed (3.9.2) — re-check this cap once a maintainer
-  can run `pub get` locally and confirm the newest `test` version their
-  SDK actually supports.
+  versions in the `custom_lint_core` 0.6.5-0.6.10 range depended on a
+  `macros` package version that required a `_macros` package bundled only
+  in certain Dart SDK builds, not present on a plain stable SDK. That was
+  fixed at the time by moving to the `custom_lint_builder` 0.7 series.
+- **Resolved:** `custom_lint_builder 0.8.1` constrains the effective analyzer
+  compatibility to analyzer 8. Because this package imports `package:analyzer`
+  directly, its public constraint is `analyzer: ">=8.0.0 <9.0.0"` instead of
+  advertising broader analyzer major support.
+- **Resolved:** lower-bound tests on current Dart SDKs require
+  `frontend_server_client >=4.0.0`; the older lower-bound selected through
+  `test` tried to invoke a removed `frontend_server.dart.snapshot`.
 
 ## Infrastructure follow-ups
 
 - **Plugin wiring smoke test.** `test/all_observer_lint_test.dart` only
-  checks `createPlugin()` returns a `PluginBase`. A fuller test that
-  constructs a real `CustomLintConfigs` and asserts every preset-referenced
-  rule name is actually registered needs a maintainer with the
-  `custom_lint` toolchain installed to confirm the exact `CustomLintConfigs`
-  construction API for the pinned `custom_lint_builder` version — this
-  could not be verified in the environment this package was authored in
-  (no Dart/Flutter SDK available to run `pub get`/`dart test`).
+  checks `createPlugin()` returns a `PluginBase`. CI now also runs lower-bound
+  resolution, and the example project is used as a real analyzer/custom_lint
+  loading smoke test during release checks.
 - **Real `all_observer` verification.** Every library URI, class name, and
-  extension name this package keys on (`AllObserverTypeChecker`) is
-  transcribed from this project's own brief, not verified against the
-  actual published `all_observer` source (network access to fetch it was
-  not available while authoring this package — see
-  `documentation/false_positives.md`). Before the first real-world
-  integration (section 34 of the brief: validation against the
-  `all_observer` repo, the example app, and a real consumer project), a
-  maintainer should diff `AllObserverTypeChecker`'s constant names against
-  the actual `all_observer` public API and adjust if anything drifted.
-- **CI matrix.** `.github/workflows/ci.yml` currently pins one Dart/Flutter
-  version. Expanding to a matrix (minimum supported + stable) is
-  straightforward once the minimum supported analyzer/custom_lint_builder
-  versions are confirmed against a real `pub get`.
+  extension name this package keys on (`AllObserverTypeChecker`) should be
+  kept in sync with the actual published `all_observer` public API before
+  each compatibility release.
+- **CI matrix.** `.github/workflows/ci.yml` currently uses stable plus a
+  separate lower-bounds job. Expanding to an explicit minimum-supported SDK
+  matrix remains future work.
 
-## Future rules (not yet designed)
+## Future rules
 
 - `avoid_large_observer_scope` (performance; mentioned as an example in
-  the brief's severity matrix, not designed in this version).
+  the original severity matrix, not designed in this version).
 - Broader reactive-collection-specific rules once the actual `all_observer`
   collection API is available to key checks on beyond the implemented
   `ObservableList` replacement pattern.
