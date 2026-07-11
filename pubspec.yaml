@@ -1,0 +1,25 @@
+name: all_observer_lint
+description: >-
+  Official lint rules and automated fixes for safe, predictable, and
+  efficient development with all_observer.
+version: 0.1.0
+homepage: https://github.com/CriandoGames/all_observer_lint
+repository: https://github.com/CriandoGames/all_observer_lint
+issue_tracker: https://github.com/CriandoGames/all_observer_lint/issues
+
+# This package is intentionally Dart-only. It analyzes source code through
+# the analyzer/custom_lint infrastructure and must work for pure-Dart
+# consumers of all_observer's core reactive engine, not only Flutter apps.
+# Do not add a Flutter SDK dependency here (see documentation/architecture.md,
+# "Why no Flutter dependency").
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  analyzer: ">=6.4.0 <8.0.0"
+  custom_lint_builder: ^0.6.4
+
+dev_dependencies:
+  custom_lint_core: ^0.6.4
+  lints: ^4.0.0
+  test: ^1.25.0

@@ -1,0 +1,19 @@
+# Lint configuration for the all_observer_lint package's own source code.
+# This is unrelated to the rules the package ships for its consumers
+# (see lib/recommended.yaml, lib/strict.yaml, lib/all.yaml).
+include: package:lints/recommended.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - "test/fixtures/**"
+    - "example/**"
+
+linter:
+  rules:
+    - prefer_single_quotes
+    - unawaited_futures
+    - always_declare_return_types
