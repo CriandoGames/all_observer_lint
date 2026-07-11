@@ -7,20 +7,9 @@ homepage: https://github.com/CriandoGames/all_observer_lint
 repository: https://github.com/CriandoGames/all_observer_lint
 issue_tracker: https://github.com/CriandoGames/all_observer_lint/issues
 
-# This package is intentionally Dart-only. It analyzes source code through
-# the analyzer/custom_lint infrastructure and must work for pure-Dart
-# consumers of all_observer's core reactive engine, not only Flutter apps.
-# Do not add a Flutter SDK dependency here (see documentation/architecture.md,
-# "Why no Flutter dependency").
 environment:
   sdk: ">=3.3.0 <4.0.0"
 
-# custom_lint_builder/custom_lint_core pin note: versions in the 0.6.5-0.6.10
-# range require an `analyzer` version whose `macros` dependency needs a
-# `_macros` package bundled only in certain Dart SDK builds, which breaks
-# `pub get` on plain stable SDKs ("could not find package _macros in the
-# Dart SDK"). Pinning to the 0.7.x line (analyzer ^7.0.0) avoids that
-# broken chain. See documentation/backlog.md, "Dependency resolution".
 dependencies:
   analyzer: ^7.0.0
   custom_lint_builder: ^0.7.0

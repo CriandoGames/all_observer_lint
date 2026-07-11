@@ -2,58 +2,82 @@
 
 ## 0.1.0
 
-Initial release. Foundation (Fase 1) and location/lifecycle rules
-(Fase 2), plus purity rules (Fase 3) and experimental strict rules.
+First public release of `all_observer_lint`.
 
-### Added
+This version introduces the official lint package for teams building with
+`all_observer`. It focuses on the mistakes that are hardest to notice during
+day-to-day development: reactive resources created in rebuild paths, effects
+registered repeatedly, impure `Computed` callbacks, unsafe writes while UI is
+building, invalid `watch(context)` usage, and missing disposal for long-lived
+reactive resources.
 
-- `custom_lint` plugin infrastructure (`AllObserverLintPlugin`,
-  `createPlugin()`).
-- Centralized semantic identification layer (`AllObserverTypeChecker`) —
-  no rule matches on identifier text alone.
-- Bilingual diagnostics (English default, `pt-BR` opt-in via
-  `all_observer: language: pt-BR`).
-- `recommended.yaml`, `strict.yaml`, `all.yaml` presets.
-- Rules (all in `recommended` unless noted):
-  - `avoid_reactive_creation_in_build`
-  - `avoid_effect_creation_in_build`
-  - `watch_only_inside_build`
-  - `dispose_reactive_resources` (with a quick fix)
-  - `avoid_reactive_write_in_computed`
-  - `avoid_set_state_in_computed`
-  - `avoid_worker_creation_in_computed`
-  - `avoid_io_in_computed`
-  - `avoid_observable_write_during_observer_build`
-  - `prefer_computed_for_derived_state` (`strict` only, `info`)
-  - `prefer_batch_for_multiple_related_writes` (`strict` only, `info`)
-- Bilingual per-rule documentation (`documentation/en/rules`,
-  `documentation/pt-BR/rules`).
-- `documentation/architecture.md`, `documentation/backlog.md`,
-  `documentation/false_positives.md`.
-- Local test fixtures (`test/fixtures/fake_all_observer`,
-  `test/fixtures/another_package`, `test/fixtures/consumer`) and rule
-  tests resolving them via `package:analyzer`'s
-  `AnalysisContextCollection`.
-- `example/` Flutter app demonstrating flagged/fixed pairs for the main
-  rules.
-- CI workflow (format, analyze, test, `pub publish --dry-run`).
+The goal of this first release is simple: help developers catch real reactive
+bugs earlier, directly in the IDE, without adding anything to the application
+runtime.
+
+### Highlights
+
+- Official `custom_lint` plugin for `all_observer`.
+- Ready-to-use presets:
+  - `recommended.yaml` for everyday projects.
+  - `strict.yaml` for additional design guidance.
+  - `all.yaml` for evaluating every available rule.
+- Diagnostics in English by default.
+- Brazilian Portuguese diagnostics with:
+
+  ```yaml
+  all_observer:
+    language: pt-BR
+  ```
+
+- Quick fix support for missing disposal of reactive resources.
+- Example Flutter app with flagged and fixed patterns.
+- Bilingual rule documentation.
+
+### Rules Included
+
+Recommended rules:
+
+- `avoid_reactive_creation_in_build`
+- `avoid_effect_creation_in_build`
+- `watch_only_inside_build`
+- `dispose_reactive_resources`
+- `avoid_reactive_write_in_computed`
+- `avoid_set_state_in_computed`
+- `avoid_worker_creation_in_computed`
+- `avoid_io_in_computed`
+- `avoid_observable_write_during_observer_build`
+
+Strict rules:
+
+- `prefer_computed_for_derived_state`
+- `prefer_batch_for_multiple_related_writes`
+
+### Why It Matters
+
+`all_observer` tracks dependencies automatically when reactive values are read
+inside tracked contexts such as `Observer`, `Computed`, `effect`, and
+`watch(context)`. Small mistakes around where resources are created, where
+state is mutated, or when subscriptions are disposed can lead to duplicated
+listeners, repeated side effects, lost state, stale observers, or unpredictable
+UI updates.
+
+`all_observer_lint` turns those patterns into actionable feedback while the
+developer is still writing the code.
+
+### Documentation
+
+- README: installation, setup, examples, presets, and rule list.
+- `README.pt-BR.md`: Portuguese version.
+- `documentation/en/rules/`: English rule documentation.
+- `documentation/pt-BR/rules/`: Portuguese rule documentation.
+- `documentation/architecture.md`: implementation notes and semantic matching.
+- `documentation/backlog.md`: known limitations and future rule candidates.
+- `documentation/false_positives.md`: false-positive policy and known tradeoffs.
 
 ### Notes
 
-- `avoid_side_effects_in_computed`, originally planned as a single broad
-  rule, was split before release into
-  `avoid_reactive_write_in_computed`, `avoid_set_state_in_computed`,
-  `avoid_worker_creation_in_computed`, and `avoid_io_in_computed` — see
-  `documentation/backlog.md`, "Why not one avoid_side_effects_in_computed
-  rule."
-- No rule in this release is `error`-level. Every rule that touches a
-  potential reactive-cycle concern documents, in its own file, the
-  specific proof that would be required before a promotion — see
-  `documentation/backlog.md`.
-- This package was authored without access to the real, published
-  `all_observer` source or a local Dart/Flutter SDK to run `pub get`/
-  `dart test`/`dart analyze`. Library/class/extension names in
-  `AllObserverTypeChecker` are transcribed from the project brief;
-  verifying them against the real package, and running the full test/CI
-  suite for the first time, is the first follow-up task for a maintainer
-  with that access — see `documentation/backlog.md`.
+- All v0.1.0 recommended rules are intentionally conservative.
+- No rule ships as `error` in this release. Future error-level rules will require
+  reproducible runtime evidence and dedicated documentation.
+- The package is development-only and does not add runtime dependencies to apps.

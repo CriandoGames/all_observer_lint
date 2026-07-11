@@ -1,5 +1,7 @@
 # all_observer_lint
 
+![all_observer_lint banner](assets/all_observer_lint_banner.png)
+
 Official lint rules for building safer Flutter and Dart apps with
 [`all_observer`](https://github.com/CriandoGames/all_observer).
 
