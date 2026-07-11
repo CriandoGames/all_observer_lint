@@ -1,0 +1,28 @@
+# Recommended preset for all_observer_lint.
+#
+# Usage, in your project's analysis_options.yaml:
+#
+#   include: package:all_observer_lint/recommended.yaml
+#
+# This enables the rules considered safe enough for everyday use: low
+# false-positive rate, clear diagnostics, and a demonstrated real-world
+# failure mode behind every one of them. None of them are `error` yet —
+# see documentation/backlog.md and section 29 of the project brief
+# ("provas antes de bloquear o CI") for the promotion path.
+analyzer:
+  plugins:
+    - custom_lint
+
+all_observer:
+  # Uncomment to switch every diagnostic message to Brazilian Portuguese.
+  # language: pt-BR
+  rules:
+    - avoid_reactive_creation_in_build
+    - avoid_effect_creation_in_build
+    - watch_only_inside_build
+    - dispose_reactive_resources
+    - avoid_reactive_write_in_computed
+    - avoid_set_state_in_computed
+    - avoid_worker_creation_in_computed
+    - avoid_io_in_computed
+    - avoid_observable_write_during_observer_build

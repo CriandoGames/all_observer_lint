@@ -1,0 +1,15 @@
+name: all_observer
+description: >-
+  Minimal local stand-in for the real `all_observer` package, used only by
+  all_observer_lint's own test fixtures so tests do not depend on pub.dev
+  or network access. Not published, not a dependency of the real package.
+version: 0.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter

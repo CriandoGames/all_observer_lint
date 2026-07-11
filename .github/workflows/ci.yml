@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    name: Format, analyze, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Stable channel; also see documentation/backlog.md, "CI matrix"
+          # for expanding this to a minimum-supported-version job once the
+          # minimum supported analyzer/custom_lint_builder versions are
+          # confirmed against a real `pub get`.
+          channel: stable
+
+      - name: Install dependencies (package)
+        run: dart pub get
+
+      - name: Install dependencies (test fixtures)
+        run: |
+          cd test/fixtures/fake_all_observer && flutter pub get
+          cd ../another_package && dart pub get
+          cd ../consumer && flutter pub get
+
+      - name: Install dependencies (example)
+        run: cd example && flutter pub get
+
+      - name: Verify formatting
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Run tests
+        run: dart test
+
+      - name: Publish dry run
+        run: dart pub publish --dry-run

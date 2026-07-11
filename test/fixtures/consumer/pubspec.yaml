@@ -1,0 +1,19 @@
+name: all_observer_lint_consumer_fixture
+description: >-
+  Local Flutter fixture project used by all_observer_lint's tests. Depends
+  on the local fake_all_observer and another_package stand-ins, never on
+  the real packages, so tests do not require network access.
+version: 0.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  all_observer:
+    path: ../fake_all_observer
+  another_package:
+    path: ../another_package

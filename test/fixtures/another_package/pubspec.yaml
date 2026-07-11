@@ -1,0 +1,10 @@
+name: another_package
+description: >-
+  Unrelated package that happens to declare symbols named `Observable`,
+  `Observer`, and a `watch` method, used to prove that all_observer_lint
+  never matches on name alone (see documentation/false_positives.md).
+version: 0.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"

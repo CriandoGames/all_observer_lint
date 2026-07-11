@@ -1,0 +1,19 @@
+name: all_observer_lint_example
+description: >-
+  Minimal Flutter app demonstrating all_observer_lint's recommended preset
+  catching real reactive bugs, with a fixed version next to each one.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  all_observer: ^1.5.3
+
+dev_dependencies:
+  custom_lint: ^0.7.0
+  all_observer_lint:
+    path: ../

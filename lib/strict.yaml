@@ -1,0 +1,16 @@
+# Strict preset for all_observer_lint.
+#
+# Adds experimental, opinionated `info`-level rules on top of
+# `recommended.yaml`. These rules are conservative by design but more
+# likely to disagree with a team's architectural preferences than the
+# recommended set, so they are opt-in.
+#
+# Usage:
+#
+#   include: package:all_observer_lint/strict.yaml
+include: package:all_observer_lint/recommended.yaml
+
+all_observer:
+  rules:
+    - prefer_computed_for_derived_state
+    - prefer_batch_for_multiple_related_writes

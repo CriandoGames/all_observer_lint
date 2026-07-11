@@ -15,11 +15,18 @@ issue_tracker: https://github.com/CriandoGames/all_observer_lint/issues
 environment:
   sdk: ">=3.3.0 <4.0.0"
 
+# custom_lint_builder/custom_lint_core pin note: versions in the 0.6.5-0.6.10
+# range require an `analyzer` version whose `macros` dependency needs a
+# `_macros` package bundled only in certain Dart SDK builds, which breaks
+# `pub get` on plain stable SDKs ("could not find package _macros in the
+# Dart SDK"). Pinning to the 0.7.x line (analyzer ^7.0.0) avoids that
+# broken chain. See documentation/backlog.md, "Dependency resolution".
 dependencies:
-  analyzer: ">=6.4.0 <8.0.0"
-  custom_lint_builder: ^0.6.4
+  analyzer: ^7.0.0
+  custom_lint_builder: ^0.7.0
 
 dev_dependencies:
-  custom_lint_core: ^0.6.4
-  lints: ^4.0.0
-  test: ^1.25.0
+  custom_lint_core: ^0.7.0
+  lints: ^5.0.0
+  test: ">=1.24.0 <1.26.0"
+  path: ^1.9.0

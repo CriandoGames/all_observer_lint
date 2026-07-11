@@ -1,0 +1,26 @@
+# Every rule all_observer_lint ships, including experimental ones.
+#
+# Prefer `recommended.yaml` or `strict.yaml` for normal projects. `all.yaml`
+# is meant for trying out the full rule set (e.g. while developing
+# all_observer_lint itself, or evaluating new rules before adopting them).
+#
+# Usage:
+#
+#   include: package:all_observer_lint/all.yaml
+analyzer:
+  plugins:
+    - custom_lint
+
+all_observer:
+  rules:
+    - avoid_reactive_creation_in_build
+    - avoid_effect_creation_in_build
+    - watch_only_inside_build
+    - dispose_reactive_resources
+    - avoid_reactive_write_in_computed
+    - avoid_set_state_in_computed
+    - avoid_worker_creation_in_computed
+    - avoid_io_in_computed
+    - avoid_observable_write_during_observer_build
+    - prefer_computed_for_derived_state
+    - prefer_batch_for_multiple_related_writes
