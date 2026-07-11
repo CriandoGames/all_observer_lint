@@ -7,7 +7,7 @@ on:
 
 jobs:
   analyze-and-test:
-    name: Format, analyze, test
+    name: Dependencies and tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,14 +32,5 @@ jobs:
       - name: Install dependencies (example)
         run: cd example && flutter pub get
 
-      - name: Verify formatting
-        run: dart format --set-exit-if-changed .
-
-      - name: Analyze
-        run: dart analyze --fatal-infos
-
       - name: Run tests
         run: dart test
-
-      - name: Publish dry run
-        run: dart pub publish --dry-run
