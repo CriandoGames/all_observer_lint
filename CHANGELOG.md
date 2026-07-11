@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+Compatibility release for the current Dart/custom_lint toolchain.
+
+- Raised the minimum Dart SDK to `>=3.10.0 <4.0.0`.
+- Updated lint tooling constraints for `custom_lint_builder 0.8.x` and
+  `analyzer 8.x`.
+- Migrated internal analyzer API usage to the current element model.
+- No rule behavior changes.
+
 ## 0.1.0
 
 First public release of `all_observer_lint`.
