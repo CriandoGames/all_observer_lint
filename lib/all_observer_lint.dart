@@ -5,7 +5,7 @@
 /// `custom_lint`. Consumers configure the rules through `analysis_options.yaml`
 /// (typically by including one of the bundled presets: `recommended.yaml`,
 /// `strict.yaml`, or `all.yaml`) instead of importing Dart symbols directly.
-library all_observer_lint;
+library;
 
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 

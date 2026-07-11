@@ -1,5 +1,4 @@
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart' hide LintCode;
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
@@ -114,8 +113,7 @@ class DisposeReactiveResources extends DartLintRule {
       final target = expression.target;
       if (target is SimpleIdentifier) {
         names.add(target.name);
-      } else if (target is PropertyAccess &&
-          target.target is ThisExpression) {
+      } else if (target is PropertyAccess && target.target is ThisExpression) {
         names.add(target.propertyName.name);
       }
     }

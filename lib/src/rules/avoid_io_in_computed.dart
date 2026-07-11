@@ -63,6 +63,7 @@ class AvoidIoInComputed extends DartLintRule {
     });
 
     context.registry.addInstanceCreationExpression((node) {
+      if (_isImmediateTargetOfDartIoMethodInvocation(node)) return;
       if (_isDartIoElement(node.constructorName.type.element) &&
           finder.isInsideComputedCallback(node)) {
         reporter.atNode(node, code);
@@ -72,6 +73,15 @@ class AvoidIoInComputed extends DartLintRule {
 
   bool _isDartIoCall(MethodInvocation node) =>
       _isDartIoElement(node.methodName.staticElement);
+
+  bool _isImmediateTargetOfDartIoMethodInvocation(
+    InstanceCreationExpression node,
+  ) {
+    final parent = node.parent;
+    return parent is MethodInvocation &&
+        identical(parent.target, node) &&
+        _isDartIoCall(parent);
+  }
 
   bool _isDartIoElement(Element? element) {
     final libraryUri = element?.library?.identifier;

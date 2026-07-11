@@ -39,8 +39,9 @@ Future<ResolvedUnitResult> resolveFixture(String fileName) async {
   if (result is! ResolvedUnitResult) {
     throw StateError('Could not resolve $path: $result');
   }
-  final errors =
-      result.errors.where((e) => e.severity == ErrorSeverity.ERROR).toList();
+  final errors = result.errors
+      .where((error) => error.errorCode.errorSeverity == ErrorSeverity.ERROR)
+      .toList();
   if (errors.isNotEmpty) {
     throw StateError(
       'Fixture $fileName has analysis errors, results would be unreliable:\n'

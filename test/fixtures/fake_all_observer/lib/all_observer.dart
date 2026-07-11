@@ -42,9 +42,11 @@ class Disposer {
 }
 
 Disposer effect(void Function() callback) => Disposer();
-Disposer ever<T>(CoreObservable<T> observable, void Function(T value) onChange) =>
+Disposer ever<T>(
+        CoreObservable<T> observable, void Function(T value) onChange) =>
     Disposer();
-Disposer once<T>(CoreObservable<T> observable, void Function(T value) onChange) =>
+Disposer once<T>(
+        CoreObservable<T> observable, void Function(T value) onChange) =>
     Disposer();
 Disposer debounce<T>(
   CoreObservable<T> observable,

@@ -13,15 +13,15 @@ void main() {
   int countOffenses(CompilationUnit unit) {
     var count = 0;
     unit.accept(_Visitor(checker, (callback) {
-      count += writeDetector
-          .findIn(callback, includeNestedFunctions: false)
-          .length;
+      count +=
+          writeDetector.findIn(callback, includeNestedFunctions: false).length;
     }));
     return count;
   }
 
   group('avoid_observable_write_during_observer_build', () {
-    test('flags conditional and unconditional writes inside Observer', () async {
+    test('flags conditional and unconditional writes inside Observer',
+        () async {
       final result = await resolveFixture('observer_write_invalid.dart');
       expect(countOffenses(result.unit), 2);
     });

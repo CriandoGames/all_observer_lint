@@ -24,13 +24,17 @@ void main() {
   }
 
   group('avoid_effect_creation_in_build', () {
-    test('flags effect/ever/debounce registered in build or Observer', () async {
-      final result = await resolveFixture('effect_creation_in_build_invalid.dart');
+    test('flags effect/ever/debounce registered in build or Observer',
+        () async {
+      final result =
+          await resolveFixture('effect_creation_in_build_invalid.dart');
       expect(countOffenses(result.unit), 3);
     });
 
-    test('does not flag workers registered in initState or event handlers', () async {
-      final result = await resolveFixture('effect_creation_in_build_valid.dart');
+    test('does not flag workers registered in initState or event handlers',
+        () async {
+      final result =
+          await resolveFixture('effect_creation_in_build_valid.dart');
       expect(countOffenses(result.unit), 0);
     });
   });

@@ -75,8 +75,7 @@ class AllObserverTypeChecker {
 
   bool _isFromFlutter(Element? element) {
     final libraryUri = element?.library?.identifier;
-    return libraryUri != null &&
-        libraryUri.startsWith(flutterPackageUriPrefix);
+    return libraryUri != null && libraryUri.startsWith(flutterPackageUriPrefix);
   }
 
   /// Public wrapper for [_isFromFlutter], used by widget-lifecycle helpers

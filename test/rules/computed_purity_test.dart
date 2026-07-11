@@ -21,9 +21,8 @@ void main() {
     int countWrites(CompilationUnit unit) {
       var count = 0;
       unit.accept(_ComputedVisitor(checker, (callback) {
-        count += writeDetector
-            .findIn(callback, includeNestedFunctions: true)
-            .length;
+        count +=
+            writeDetector.findIn(callback, includeNestedFunctions: true).length;
       }));
       return count;
     }
@@ -35,7 +34,8 @@ void main() {
       expect(countWrites(result.unit), 2);
     });
 
-    test('does not flag pure derivations, nested pure closures, or '
+    test(
+        'does not flag pure derivations, nested pure closures, or '
         'unrelated .value fields', () async {
       final result = await resolveFixture('computed_purity_valid.dart');
       expect(countWrites(result.unit), 0);
@@ -129,7 +129,8 @@ class _ComputedVisitor extends RecursiveAstVisitor<void> {
 }
 
 class _MethodInvocationInComputedVisitor extends RecursiveAstVisitor<void> {
-  _MethodInvocationInComputedVisitor(this._finder, this._matches, this._onOffense);
+  _MethodInvocationInComputedVisitor(
+      this._finder, this._matches, this._onOffense);
 
   final ComputedCallbackFinder _finder;
   final bool Function(MethodInvocation) _matches;
@@ -169,13 +170,27 @@ class _IoVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
-    final library =
-        node.constructorName.type.element?.library?.identifier;
+    if (_isImmediateTargetOfDartIoMethodInvocation(node)) {
+      super.visitInstanceCreationExpression(node);
+      return;
+    }
+    final library = node.constructorName.type.element?.library?.identifier;
     if (library != null &&
         library.startsWith('dart:io') &&
         _finder.isInsideComputedCallback(node)) {
       _onOffense();
     }
     super.visitInstanceCreationExpression(node);
+  }
+
+  bool _isImmediateTargetOfDartIoMethodInvocation(
+    InstanceCreationExpression node,
+  ) {
+    final parent = node.parent;
+    if (parent is! MethodInvocation || !identical(parent.target, node)) {
+      return false;
+    }
+    final library = parent.methodName.staticElement?.library?.identifier;
+    return library != null && library.startsWith('dart:io');
   }
 }

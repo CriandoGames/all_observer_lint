@@ -1,5 +1,5 @@
 import 'package:all_observer/all_observer.dart';
-import 'package:another_package/observer.dart' as other;
+import 'package:another_package/observer.dart' as other hide FakeObsExtension;
 import 'package:flutter/material.dart';
 
 class FieldObservableWidget extends StatefulWidget {

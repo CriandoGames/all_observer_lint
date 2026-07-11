@@ -25,7 +25,8 @@ class ComputedCallbackFinder {
   FunctionExpression? find(AstNode node) {
     AstNode? current = node.parent;
     while (current != null) {
-      if (current is FunctionExpression && _isComputedCallbackArgument(current)) {
+      if (current is FunctionExpression &&
+          _isComputedCallbackArgument(current)) {
         return current;
       }
       if (current is FunctionDeclaration || current is MethodDeclaration) {

@@ -1,4 +1,3 @@
-import 'package:all_observer_lint/src/rules/watch_only_inside_build.dart';
 import 'package:all_observer_lint/src/utils/all_observer_type_checker.dart';
 import 'package:all_observer_lint/src/utils/build_context_detector.dart';
 import 'package:analyzer/dart/ast/ast.dart';

@@ -68,7 +68,8 @@ class AvoidReactiveWriteInComputed extends DartLintRule {
 
   FunctionExpression? _firstFunctionArgument(InstanceCreationExpression node) {
     for (final argument in node.argumentList.arguments) {
-      final value = argument is NamedExpression ? argument.expression : argument;
+      final value =
+          argument is NamedExpression ? argument.expression : argument;
       if (value is FunctionExpression) return value;
     }
     return null;

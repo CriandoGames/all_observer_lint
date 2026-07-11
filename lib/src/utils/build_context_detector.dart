@@ -33,8 +33,9 @@ class RebuildScopeFinder {
       }
       if (current is FunctionExpression) {
         final parent = current.parent;
-        if (parent is InstanceCreationExpression &&
-            _checker.isObserverWidgetCreation(parent)) {
+        final invocation = parent is ArgumentList ? parent.parent : parent;
+        if (invocation is InstanceCreationExpression &&
+            _checker.isObserverWidgetCreation(invocation)) {
           return current;
         }
         // Any other closure is a scope boundary: code inside it does not
@@ -62,8 +63,9 @@ class RebuildScopeFinder {
     while (current != null) {
       if (current is FunctionExpression) {
         final parent = current.parent;
-        if (parent is InstanceCreationExpression &&
-            _checker.isObserverWidgetCreation(parent)) {
+        final invocation = parent is ArgumentList ? parent.parent : parent;
+        if (invocation is InstanceCreationExpression &&
+            _checker.isObserverWidgetCreation(invocation)) {
           return current;
         }
         return null;
