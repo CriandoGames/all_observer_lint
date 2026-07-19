@@ -121,11 +121,7 @@ instead:
    number/kind of matches.
 
 This exercises the real semantic logic without depending on network access
-or a full `custom_lint` runner in CI. The trade-off, tracked in
-`documentation/backlog.md`, is that it does not (yet) prove the `DartLintRule.run`
-wiring itself is bug-free end to end — a smoke test against the real
-`custom_lint` CLI is future work once a maintainer has Flutter/`custom_lint`
-installed locally to validate it.
+or a full `custom_lint` runner in CI.
 
 ## Current semantic and transformation infrastructure
 
@@ -139,8 +135,21 @@ New rules execute through `DartLintRule.testRun`. Transformation tests invoke
 the real `DartFix`/`DartAssist`, apply full-file edits, format, resolve again,
 verify the diagnostic disappears, and check idempotency. CI loads all rules and
 assists through `dart run custom_lint` in `test/fixtures/smoke` and applies the
-disposal fix to a temporary copied target. This supersedes the older initial
-testing-strategy note above that described runner coverage as future work.
+disposal fix to a temporary copied target, then re-formats, re-analyzes, and
+re-runs `custom_lint` to prove the diagnostic is actually gone (not just that
+some text was inserted).
+
+`test/fixtures/smoke`, however, still resolves against
+`test/fixtures/fake_all_observer` — this package's own local stand-in for
+`all_observer`, never the published package. `test/fixtures/real_runtime_smoke`
+closes that remaining gap: it is pinned to the real, published `all_observer`
+package (`>=1.5.6 <1.6.0`) and runs the same analyze → lint → fix → re-lint
+sequence in its own CI job, proving this package's rules and quick fixes
+actually behave correctly against the real API — not only against a fake
+whose shape could (and once did, before the 0.5.1 audit) silently drift from
+reality. `test/runtime_contract/fake_runtime_contract_test.dart` guards that
+fake's shape between real-package audits, with a lightweight, network-free
+source check.
 
 ## Categories
 

@@ -1,1 +1,13 @@
-concurrency: 4
+# Each test *file* builds its own `AnalysisContextCollection` against
+# `test/fixtures/consumer` from scratch (see `test/support/resolve_fixture.dart`).
+# That first resolve is the expensive part: it parses/resolves the Flutter
+# SDK plus every fixture in that project, not just the one file under test.
+# As more fixtures were added across 0.5.1 (collision/shadowing cases,
+# collection-read cases, helper-disposal cases, etc.), that cold start grew
+# slow enough that several test files running this concurrently on a
+# constrained CI runner started exceeding the default 30s per-test timeout
+# (a `TimeoutException` in `dart:isolate`, not an actual hang/infinite loop
+# in the rule logic). Lower concurrency and a longer timeout give each
+# isolate's first resolve enough room without starving on CPU.
+concurrency: 2
+timeout: 3x

@@ -33,7 +33,7 @@ Your `pubspec.yaml` should contain:
 ```yaml
 dev_dependencies:
   custom_lint: ^0.8.0
-  all_observer_lint: ^0.5.0
+  all_observer_lint: ^0.5.1
 ```
 
 `custom_lint` is required because it is the analyzer runner that loads custom
@@ -146,8 +146,12 @@ class _SearchPageState extends State<SearchPage> {
 Select a resolved Widget expression containing an immediate reactive read and
 choose **Wrap with Observer**. It generates the public
 `Observer(() => widget)` constructor, reuses prefixed imports, and adds an
-import when safe. It stays unavailable in callbacks, tracked contexts,
-`watch(context)`, constant contexts, and unresolved code.
+import when safe — falling back to a freshly generated, uniquely-named
+prefixed import (e.g. `allObserver.Observer`) whenever a bare `Observer`
+reference would be shadowed or ambiguous (a same-named declaration in the
+file, a locally-shadowing parameter/variable, or another unprefixed import
+that also exposes `Observer`). It stays unavailable in callbacks, tracked
+contexts, `watch(context)`, constant contexts, and unresolved code.
 
 ## Presets
 

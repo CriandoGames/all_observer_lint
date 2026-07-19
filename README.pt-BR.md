@@ -33,7 +33,7 @@ Seu `pubspec.yaml` deve ficar assim:
 ```yaml
 dev_dependencies:
   custom_lint: ^0.8.0
-  all_observer_lint: ^0.5.0
+  all_observer_lint: ^0.5.1
 ```
 
 O `custom_lint` é necessário porque ele é o runner do analyzer que carrega
@@ -147,9 +147,13 @@ class _SearchPageState extends State<SearchPage> {
 
 Selecione uma expressão Widget resolvida com leitura reativa imediata e escolha
 **Wrap with Observer**. O assist gera `Observer(() => widget)`, reutiliza
-imports prefixados e adiciona o import quando for seguro. Ele não aparece em
-callbacks, contextos já rastreados, `watch(context)`, contextos constantes ou
-código não resolvido.
+imports prefixados e adiciona o import quando for seguro — caindo para um
+import prefixado, gerado com um nome único (ex.: `allObserver.Observer`),
+sempre que uma referência simples a `Observer` ficaria sombreada ou ambígua
+(uma declaração de mesmo nome no arquivo, um parâmetro/variável local
+sombreando, ou outro import sem prefixo que também exponha `Observer`). Ele
+não aparece em callbacks, contextos já rastreados, `watch(context)`,
+contextos constantes ou código não resolvido.
 
 ## Presets
 
