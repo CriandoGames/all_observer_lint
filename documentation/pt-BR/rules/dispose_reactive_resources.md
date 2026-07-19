@@ -43,9 +43,16 @@ void dispose() {
 ## Limitações e falsos positivos possíveis
 
 Somente campos com inicializador direto, resolvido e de posse comprovada são
-verificados. Posse por helper/factory e classes sem `dispose()` próprio ficam
-silenciosas. Uma chamada em fluxo condicional é aceita; não há prova sensível a
-caminhos. Delegar descarte a helper pode gerar falso positivo.
+verificados. Classes sem `dispose()` próprio ficam silenciosas. Uma chamada em
+fluxo condicional é aceita; não há prova sensível a caminhos.
+
+Descarte delegado a um método helper *é* seguido, mas de forma restrita: um
+método da mesma classe, sem parâmetros, chamado sem alvo ou via `this.`
+(`_disposeResources()`, `this._disposeResources()`), diretamente ou
+encadeado por outros helpers assim. Um helper que recebe parâmetro (ex.:
+`_disposeWith(worker)`), que vive em outra classe/mixin, ou só é alcançado
+via tear-off, não é seguido — o campo continua sendo sinalizado nesses
+casos.
 
 ## Quando ignorar
 

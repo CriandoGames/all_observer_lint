@@ -43,9 +43,15 @@ void dispose() {
 ## Limitations and possible false positives
 
 Only fields with a direct, semantically resolved owned initializer are checked.
-Helper/factory ownership and classes without their own `dispose()` are skipped.
-A call inside conditional control flow is accepted; path-sensitive lifecycle
-proof is not attempted. Delegating disposal to a helper can therefore report a
+Classes without their own `dispose()` are skipped. A call inside conditional
+control flow is accepted; path-sensitive lifecycle proof is not attempted.
+
+Disposal delegated to a helper method *is* followed, but only narrowly: a
+same-class, zero-parameter method called via a bare or `this.` target
+(`_disposeResources()`, `this._disposeResources()`), directly or chained
+through further such helpers. A helper that takes a parameter (e.g.
+`_disposeWith(worker)`), lives in a different class/mixin, or is reached
+only through a tear-off, is not followed, and can therefore still report a
 false positive.
 
 ## When to ignore

@@ -39,13 +39,50 @@ review of 0.5.0 (see `documentation/backlog.md`):
   (matching how the real package models it, which affects static-type-based
   member resolution, iteration, and collection literals), and
   `ObservableMap`/`ObservableSet` fakes and `.obs` extensions were added.
-- Note: the existing smoke test (`test/fixtures/smoke`) still exercises the
-  real `custom_lint` runner and this plugin's own code against the
-  `fake_all_observer` fixture, not the real published `all_observer` package.
-  A separate smoke test against the real package (tracked in
-  `documentation/backlog.md`) is still needed before this can be considered
-  fully proven against `all_observer` 1.5.6 and is out of scope for this
-  patch.
+- `observer_without_reactive_read`/`computed_without_reactive_read` no
+  longer under-report on a tracking scope that only iterates or queries a
+  reactive collection: `ReactiveReadCollector` now also recognizes
+  `map`/`where`/`whereType`/`expand`/`fold`/`reduce`/`every`/`any`/
+  `contains`/`containsKey`/`containsValue`/`indexOf`/`lastIndexOf`/
+  `indexWhere`/`lastIndexWhere`/`join`/`take`/`takeWhile`/`skip`/
+  `skipWhile`/`followedBy`/`toList`/`toSet`/`asMap`/`getRange`/`sublist`/
+  `firstWhere`/`lastWhere`/`singleWhere`/`elementAt`/`forEach` calls, plain
+  `for-in` iteration, and collection-literal spreads (`...items`), on
+  `ObservableList`/`ObservableMap`/`ObservableSet` as reads — matching how
+  the real collections actually register dependencies at runtime (through
+  their own `length`/`[]`).
+- Added `test/fixtures/real_runtime_smoke`, a fixture pinned to the real,
+  published `all_observer` package (`>=1.5.6 <1.6.0`) rather than this
+  repo's `fake_all_observer` stand-in, wired into a new CI job. It analyzes
+  and lints a file exercising `Observable`, `Computed`, `effect`, all four
+  workers, `ObservableSubscription`, `ObservableHistory`, `ReactiveScope`,
+  `ObservableFuture`/`ObservableStream`, `Observer`/`Observer.withChild`,
+  `watch(context)`, and the reactive collections against the real package,
+  then applies the `dispose_reactive_resources` quick fix to a file using
+  the inferred-`Disposer` form and re-analyzes/re-lints to prove the
+  diagnostic disappears and no invalid `.dispose()` call was generated —
+  the first proof this package's rules and fixes behave correctly against
+  the actual published `all_observer` API (every signature the fixture
+  relies on, e.g. `debounce`/`interval`'s required `time:`, was read
+  directly from the package source at the pinned version).
+- CI now also checks `dart format` on `lib/`, and both smoke jobs
+  (fake-runtime and real-runtime) re-run `dart format` + `dart analyze` +
+  `custom_lint` after applying the `dispose_reactive_resources` fix, failing
+  if the diagnostic is still reported — previously only each Dart test's own
+  golden comparison verified a fix's output, with no equivalent end-to-end
+  check in CI.
+- Added dedicated `observer_without_reactive_read` coverage proving
+  `Observer.withChild` is tracked correctly: only its `builder` callback is
+  inspected, never the `child` argument — a reactive read that appears only
+  in `child` still counts as the builder having zero reactive reads, since
+  `child` is built once and is never responsible for a rebuild.
+- `dispose_reactive_resources` now follows disposal delegated to a
+  same-class, zero-parameter helper method (`_disposeResources()`,
+  `this._disposeResources()`), directly or chained through further such
+  helpers, instead of only ever looking for the disposal call written
+  directly in `dispose()`. Deliberately narrow: a helper that takes a
+  parameter, lives outside the class, or is reached only through a
+  tear-off is not followed, so the field is still flagged in those cases.
 
 ## 0.5.0
 

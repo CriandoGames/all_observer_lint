@@ -24,6 +24,22 @@ void main() {
       },
     );
 
+    test(
+      'follows disposal delegated to a same-class, zero-argument helper '
+      'method (directly or through another helper), but not one that '
+      'takes an argument',
+      () async {
+        final result = await resolveFixture('dispose_via_helper_method.dart');
+        final rule = DisposeReactiveResources(configs: await testConfigs());
+
+        final errors = await rule.testRun(result);
+        // Only HelperWithArgumentNotFollowed's `worker` is flagged:
+        // DisposesThroughHelper and DisposesThroughNestedHelper both
+        // dispose their worker via a followed zero-argument helper.
+        expect(errors, hasLength(1));
+      },
+    );
+
     test('recognizes worker.dispose() and disposeEffect()', () async {
       final result = await resolveFixture(
         'dispose_reactive_resources_valid.dart',

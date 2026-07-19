@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies (example)
         run: cd example && flutter pub get
 
+      - name: Check formatting (lib)
+        run: dart format --output=none --set-exit-if-changed lib
+
       - name: Analyze
         run: dart analyze
 
@@ -41,11 +44,57 @@ jobs:
       - name: Smoke-test plugin and runner fixes
         run: |
           cd test/fixtures/smoke
-          dart run custom_lint
+          dart run custom_lint --no-fatal-infos --no-fatal-warnings
+
           cp fix_target.dart.template lib/fix_target.dart
           trap 'rm -f lib/fix_target.dart' EXIT
+
           dart run custom_lint --fix --no-fatal-infos --no-fatal-warnings
+
+          # The fix must invoke the Disposer as a callback, never call
+          # .dispose() on it (that was the pre-0.5.0 bug this smoke test
+          # guards against).
           grep -q 'disposeEffect();' lib/fix_target.dart
+          ! grep -q 'disposeEffect.dispose();' lib/fix_target.dart
+
+          # The fixed file must still be well-formatted and analysis-clean,
+          # and re-running custom_lint must show the diagnostic is gone --
+          # not just that some text was inserted.
+          dart format --output=none --set-exit-if-changed lib/fix_target.dart
+          dart analyze
+
+          output="$(dart run custom_lint --no-fatal-infos --no-fatal-warnings)"
+          echo "$output"
+          if echo "$output" | grep -q 'dispose_reactive_resources'; then
+            echo 'dispose_reactive_resources remained after applying the fix'
+            exit 1
+          fi
+
+      - name: Smoke-test against the real all_observer package
+        run: |
+          cd test/fixtures/real_runtime_smoke
+          flutter pub get
+
+          dart analyze
+          dart run custom_lint --no-fatal-infos --no-fatal-warnings
+
+          cp fix_target.dart.template lib/fix_target.dart
+          trap 'rm -f lib/fix_target.dart' EXIT
+
+          dart run custom_lint --fix --no-fatal-infos --no-fatal-warnings
+
+          grep -q 'disposeEffect();' lib/fix_target.dart
+          ! grep -q 'disposeEffect.dispose();' lib/fix_target.dart
+
+          dart format --output=none --set-exit-if-changed lib/fix_target.dart
+          dart analyze
+
+          output="$(dart run custom_lint --no-fatal-infos --no-fatal-warnings)"
+          echo "$output"
+          if echo "$output" | grep -q 'dispose_reactive_resources'; then
+            echo 'dispose_reactive_resources remained after applying the fix'
+            exit 1
+          fi
 
   lower-bounds:
     name: Lower bounds

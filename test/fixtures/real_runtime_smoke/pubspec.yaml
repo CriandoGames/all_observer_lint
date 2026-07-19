@@ -1,0 +1,24 @@
+name: all_observer_lint_real_runtime_smoke
+description: >-
+  Smoke test against the real, published `all_observer` package (not the
+  `fake_all_observer` stand-in used by every other fixture in this repo).
+  See `documentation/backlog.md` for why this exists separately from
+  `test/fixtures/smoke`. The version below is the one this package's
+  `AllObserverTypeChecker` and disposal/tracking rules were last verified
+  against; bump it deliberately, re-verifying the checked assumptions in
+  `lib/main.dart`/`fix_target.dart.template`, not automatically.
+publish_to: none
+version: 0.0.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  all_observer: ">=1.5.6 <1.6.0"
+
+dev_dependencies:
+  custom_lint: ^0.8.1
+  all_observer_lint:
+    path: ../../..

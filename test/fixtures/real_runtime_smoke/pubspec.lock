@@ -13,14 +13,14 @@ packages:
     dependency: "direct main"
     description:
       name: all_observer
-      sha256: b3e35a8b5cd4156edadf290f38c9c8573b13d485f64712f479e80ddf1e960139
+      sha256: "62c768fa861a0c802e111e56a5550dfd2778c013584577999ed3ed8c2017a729"
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.3"
+    version: "1.5.6"
   all_observer_lint:
     dependency: "direct dev"
     description:
-      path: ".."
+      path: "../../.."
       relative: true
     source: path
     version: "0.5.1"
@@ -225,10 +225,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
+      sha256: "31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd"
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.19"
+    version: "0.12.20"
   material_color_utilities:
     dependency: transitive
     description:
@@ -342,10 +342,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "949a932224383300f01be9221c39180316445ecb8e7547f70a41a35bf421fb9e"
+      sha256: "475610b2aa23c19687cce2961e44b0cc57cafe220f67c2b80201231b2a07fbe7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.11"
+    version: "0.7.13"
   typed_data:
     dependency: transitive
     description:
@@ -358,10 +358,10 @@ packages:
     dependency: transitive
     description:
       name: uuid
-      sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"
+      sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
       url: "https://pub.dev"
     source: hosted
-    version: "4.5.3"
+    version: "4.6.0"
   vector_math:
     dependency: transitive
     description:
@@ -395,5 +395,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.10.0 <4.0.0"
+  dart: ">=3.11.0 <4.0.0"
   flutter: ">=1.17.0"

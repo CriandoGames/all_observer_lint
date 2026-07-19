@@ -79,6 +79,54 @@ class _ReactiveReadVisitor extends RecursiveAstVisitor<void> {
     'first',
     'last',
     'single',
+    'iterator',
+    'reversed',
+    'keys',
+    'values',
+    'entries',
+  };
+
+  /// `Iterable`/`List`/`Map`/`Set` methods that, called on an
+  /// `ObservableList`/`ObservableMap`/`ObservableSet`, read through the
+  /// collection's own `length`/`[]`/iteration (the real `all_observer`
+  /// collections implement these on top of those primitives, which is what
+  /// actually registers the dependency at runtime — see
+  /// `ObservableList.length`/`operator []`, both of which call
+  /// `reportRead()`). Statically recognizing them here avoids the empty-
+  /// tracking-scope rules flagging a scope that only iterates a reactive
+  /// collection as having "no reactive read at all".
+  static const _collectionReadMethods = {
+    'elementAt',
+    'contains',
+    'containsKey',
+    'containsValue',
+    'indexOf',
+    'lastIndexOf',
+    'indexWhere',
+    'lastIndexWhere',
+    'join',
+    'map',
+    'where',
+    'whereType',
+    'expand',
+    'fold',
+    'reduce',
+    'every',
+    'any',
+    'take',
+    'takeWhile',
+    'skip',
+    'skipWhile',
+    'followedBy',
+    'toList',
+    'toSet',
+    'asMap',
+    'getRange',
+    'sublist',
+    'firstWhere',
+    'lastWhere',
+    'singleWhere',
+    'forEach',
   };
 
   @override
@@ -113,10 +161,57 @@ class _ReactiveReadVisitor extends RecursiveAstVisitor<void> {
     if (checker.isPeekInvocation(node)) return;
 
     if (node.methodName.element == null) hasUnresolvedNode = true;
+    _recordCollectionMethodRead(node);
     if (flagPotentialHiddenReads && _mayHideReactiveRead(node)) {
       hasPotentialHiddenRead = true;
     }
     super.visitMethodInvocation(node);
+  }
+
+  void _recordCollectionMethodRead(MethodInvocation node) {
+    final target = node.target;
+    if (target == null) return;
+    if (!_collectionReadMethods.contains(node.methodName.name)) return;
+    final targetType = target.staticType;
+    if (!checker.isObservableListType(targetType) &&
+        !checker.isObservableMapType(targetType) &&
+        !checker.isObservableSetType(targetType)) {
+      return;
+    }
+    reads.add(ReactiveReadOccurrence(node, node.methodName.element));
+  }
+
+  @override
+  void visitForElement(ForElement node) {
+    _recordIterationRead(node.forLoopParts);
+    super.visitForElement(node);
+  }
+
+  @override
+  void visitForStatement(ForStatement node) {
+    _recordIterationRead(node.forLoopParts);
+    super.visitForStatement(node);
+  }
+
+  void _recordIterationRead(ForLoopParts parts) {
+    if (parts is! ForEachParts) return;
+    final targetType = parts.iterable.staticType;
+    if (checker.isObservableListType(targetType) ||
+        checker.isObservableMapType(targetType) ||
+        checker.isObservableSetType(targetType)) {
+      reads.add(ReactiveReadOccurrence(parts.iterable, null));
+    }
+  }
+
+  @override
+  void visitSpreadElement(SpreadElement node) {
+    final targetType = node.expression.staticType;
+    if (checker.isObservableListType(targetType) ||
+        checker.isObservableMapType(targetType) ||
+        checker.isObservableSetType(targetType)) {
+      reads.add(ReactiveReadOccurrence(node.expression, null));
+    }
+    super.visitSpreadElement(node);
   }
 
   /// Whether [node] invokes something whose body we have not analyzed and

@@ -63,6 +63,44 @@ void main() {
     },
   );
 
+  test(
+    'recognizes map/where/contains/join/keys and for-in/spread iteration '
+    'over a reactive collection as reads',
+    () async {
+      final result = await resolveFixture(
+        'reactive_collection_reads_valid.dart',
+      );
+      final configs = await testConfigs();
+
+      expect(
+        await ObserverWithoutReactiveRead(configs: configs).testRun(result),
+        isEmpty,
+      );
+      expect(
+        await ComputedWithoutReactiveRead(configs: configs).testRun(result),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'Observer.withChild only inspects the builder callback, never the '
+    'child argument',
+    () async {
+      final result = await resolveFixture('observer_with_child_tracking.dart');
+      final configs = await testConfigs();
+
+      // BuilderReadsValue: not flagged (builder itself reads count.value).
+      // BuilderHasNoRead: flagged (builder has zero reads).
+      // ReadOnlyInChildArgument: flagged (the read is in `child`, which
+      // does not count toward the builder's own tracking scope).
+      expect(
+        await ObserverWithoutReactiveRead(configs: configs).testRun(result),
+        hasLength(2),
+      );
+    },
+  );
+
   test('stays silent for unresolved callbacks', () async {
     final result = await resolveFixture(
       'tracking_unresolved_valid.dart',

@@ -53,8 +53,14 @@ false-positive risks.
   or helper function called from `build` is not detected
   (`avoid_reactive_creation_in_build`, `avoid_effect_creation_in_build`).
 - `dispose_reactive_resources` only tracks fields whose initializer is a
-  direct effect/worker/`ObservableStream` expression; disposal ownership
-  transferred through a helper method is not tracked.
+  direct effect/worker/`ObservableStream` expression. Disposal ownership
+  transferred through a helper method *is* followed, but only narrowly: a
+  same-class, zero-parameter method called via a bare or `this.` target
+  (`_disposeResources()`, `this._disposeResources()`), one level or chained
+  through further zero-parameter helpers. A helper that takes a parameter
+  (e.g. `_disposeWith(worker)`), lives in a different class/mixin, or is
+  reached only through a tear-off, is not followed — the field is still
+  flagged in those cases.
 - `ReactiveWriteDetector` only recognizes `.value` assignment/increment/
   decrement, not broad reactive-collection mutation (`list.add(...)`,
   `map[key] = value`). The targeted `ObservableList.clear()` followed by
@@ -109,37 +115,42 @@ false-positive risks.
 The 0.5.1 patch addressed the `Wrap with Observer` collision/shadowing gap,
 the `effect()`-without-`Disposer`-annotation gap in `dispose_reactive_resources`,
 the `fake_all_observer` API divergences (`debounce`/`interval` requiring
-`time:`, `ObservableList`/`ObservableMap`/`ObservableSet` shape), and the
-helper/nested-closure false positives in the `*_without_reactive_read` rules.
-Still open from that review:
+`time:`, `ObservableList`/`ObservableMap`/`ObservableSet` shape), the
+helper/nested-closure false positives in the `*_without_reactive_read` rules,
+reactive collection reads beyond `.value`/`length`/etc. (`map`/`where`/`any`/
+`every`/`contains`/`join`/`for-in`/spread/`keys`/`values`/`entries`, all
+verified against the collection base-class shape of real `all_observer`
+1.5.6), a real-`all_observer` smoke test (`test/fixtures/real_runtime_smoke`,
+pinned to `all_observer: ">=1.5.6 <1.6.0"`, with its own CI job that
+analyzes, lints, applies the `dispose_reactive_resources` fix, and
+re-analyzes/re-lints to prove the diagnostic disappears — every signature it
+exercises, e.g. `debounce`/`interval` requiring `time:`, `effect`'s
+`Disposer` return type, `ObservableList extends ListBase`, was read directly
+from the published source at the pinned version, not guessed), and CI
+verification of applied fixes (`dart format` + `dart analyze` + re-run
+`custom_lint` after `--fix`, both for the fake-runtime and real-runtime
+smoke jobs). Also addressed since: `Observer.withChild` builder-vs-child
+tracking now has dedicated tests (`observer_with_child_tracking.dart`)
+proving a read in `child` never counts toward the `builder`'s own tracking
+scope, and `dispose_reactive_resources` now follows disposal delegated to a
+same-class, zero-parameter helper method (directly or chained through
+further such helpers) — see "Detection coverage gaps" above for the exact,
+deliberately narrow scope of that. Still open from that review:
 
-- **Real-runtime smoke test.** `test/fixtures/smoke` proves the real
-  `custom_lint` runner loads and runs this plugin correctly, but it still
-  resolves against `test/fixtures/fake_all_observer`, not the published
-  `all_observer` package. A separate fixture pinned to a real `all_observer`
-  version (with its own `pubspec.yaml`, analyzed and fixed in CI) is needed
-  before this package can claim proven compatibility with a specific
-  `all_observer` release, rather than only with its own fake.
-- **Reactive collection reads beyond `.value`/`length`/`isEmpty`/etc.**
-  `ReactiveReadCollector` does not yet recognize `map`/`where`/`any`/`every`/
-  `contains`/`join`/iteration (`for-in`, spreads, collection-for)/`keys`/
-  `values`/`entries` on `ObservableList`/`ObservableMap`/`ObservableSet` as
-  reads. Until that lands, `*_without_reactive_read` can under-report (a
-  scope that only iterates a reactive collection may be incorrectly flagged
-  as empty) — mitigated for now by the nested-closure conservatism added in
-  0.5.1, but not fixed at the root for direct iteration reads that don't go
-  through a nested closure.
-- **`Observer.withChild` builder tracking.** Not yet covered by dedicated
-  tests distinguishing reads in the `builder` callback from the `child`
-  argument.
 - **Mixed `watch(context)` + `.value` in the same expression.** `Wrap with
   Observer` still stays unavailable rather than guessing at a safe partial
-  wrap.
-- **CI verification of applied fixes.** CI does not yet re-run `dart format`
-  + `dart analyze` + `custom_lint` after `custom_lint --fix` to prove a
-  diagnostic disappears and no invalid code was generated; today that is
-  only checked inside each Dart test (via `resolveFixture`/golden
-  comparisons), not as a separate CI smoke step.
+  wrap. (Deliberate: see the "Mixed watch + .value" design note near the
+  assist's own tests/docs — not a bug, a documented deferral.)
+- **`fake_runtime_contract_test.dart`.** No dedicated test yet asserts that
+  `fake_all_observer`'s public surface stays in sync with the real
+  package's; today that sync is manual (verified once, for 0.5.1, directly
+  against the pinned commit) rather than continuously checked.
+- **`all_observer_lint.dart`/format check scope.** The CI formatting check
+  only covers `lib/`, not `test/`; the many hand-authored test fixtures in
+  this repo have not been verified against `dart format` line-for-line
+  (existing golden-comparison tests already run fixtures they *transform*
+  through `dart format`, but plain, never-transformed fixtures have not
+  been re-checked).
 
 ## Future rules
 
