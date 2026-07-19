@@ -10,7 +10,11 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  late final Worker worker = debounce(widget.query, _onSearch);
+  late final Worker worker = debounce(
+    widget.query,
+    _onSearch,
+    time: const Duration(milliseconds: 300),
+  );
   late final Disposer disposeEffect = effect(() {});
 
   void _onSearch(String value) {}

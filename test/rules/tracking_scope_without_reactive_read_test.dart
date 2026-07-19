@@ -47,6 +47,22 @@ void main() {
     },
   );
 
+  test(
+    'stays silent for helpers called through this/an instance target and '
+    'for reads hidden inside a nested closure',
+    () async {
+      final result = await resolveFixture(
+        'tracking_helpers_with_targets_valid.dart',
+      );
+      final configs = await testConfigs();
+
+      expect(
+        await ComputedWithoutReactiveRead(configs: configs).testRun(result),
+        isEmpty,
+      );
+    },
+  );
+
   test('stays silent for unresolved callbacks', () async {
     final result = await resolveFixture(
       'tracking_unresolved_valid.dart',

@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.5.1
+
+Stabilization patch, addressing the P0/P1 findings from the pre-publication
+review of 0.5.0 (see `documentation/backlog.md`):
+
+- `Wrap with Observer` no longer assumes a bare `Observer(...)` reference is
+  safe just because an `all_observer` import exists or can be added. The
+  assist now checks for a same-named top-level declaration in the file, a
+  locally-shadowing parameter/variable at the selection point, and any other
+  unprefixed import that might also expose an `Observer` name, falling back
+  to a freshly generated, uniquely-named prefixed import
+  (e.g. `allObserver.Observer`, `allObserver2.Observer`) whenever any of
+  those are detected. This means the assist is now available (via a safe
+  prefixed import) in some cases where it previously stayed unavailable.
+- `dispose_reactive_resources` and its quick fix now also recognize
+  `effect(...)` stored without an explicit `Disposer` annotation
+  (`late final disposeEffect = effect(() {});`) and, when the initializer is
+  proven to be `effect(...)` but the declared type is a non-`Disposer`
+  structural function type, only apply the callback-invocation fix when that
+  type is actually invocable with no required arguments — a field typed as
+  `Object` (or anything else non-invocable) is left unresolved rather than
+  risking an invalid `field();` fix.
+- `observer_without_reactive_read`, `computed_without_reactive_read`, and
+  `effect_without_reactive_read` are now more conservative about proving a
+  tracking scope has *no* reactive read at all: a helper call reached
+  through `this`/an instance target/a static target (previously only bare
+  calls were treated this way), and a nested closure (e.g. inside `.map`),
+  are now both treated as a potential hidden read and suppress the
+  diagnostic, instead of being silently ignored. Calls resolved to
+  `dart:core`/other SDK libraries (e.g. `toString()`) are explicitly
+  excluded from this so proven-empty scopes are still flagged.
+- The `fake_all_observer` test fixture (used only by this package's own test
+  suite, never shipped) was updated to match the real `all_observer` public
+  surface more closely: `debounce`/`interval` now require the named `time:`
+  parameter (previously optional with a default), `ObservableList<E>` now
+  extends `ListBase<E>` instead of wrapping a `CoreObservable<List<E>>`
+  (matching how the real package models it, which affects static-type-based
+  member resolution, iteration, and collection literals), and
+  `ObservableMap`/`ObservableSet` fakes and `.obs` extensions were added.
+- Note: the existing smoke test (`test/fixtures/smoke`) still exercises the
+  real `custom_lint` runner and this plugin's own code against the
+  `fake_all_observer` fixture, not the real published `all_observer` package.
+  A separate smoke test against the real package (tracked in
+  `documentation/backlog.md`) is still needed before this can be considered
+  fully proven against `all_observer` 1.5.6 and is out of scope for this
+  patch.
+
 ## 0.5.0
 
 - Fixed `dispose_reactive_resources` and its quick fix to use resolved disposal

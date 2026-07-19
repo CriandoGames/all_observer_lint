@@ -5,6 +5,8 @@
 /// only ever analyzed, never executed.
 library all_observer;
 
+import 'dart:collection';
+
 import 'package:flutter/widgets.dart';
 
 class CoreObservable<T> {
@@ -24,16 +26,104 @@ class Observable<T> extends CoreObservable<T> {
       ObservableSubscription();
 }
 
-class ObservableList<T> extends CoreObservable<List<T>> {
-  ObservableList(super.value);
+/// Modeled after the real `all_observer` shape: `ObservableList<E>` is
+/// itself a `List<E>` (via `ListBase`), not a `CoreObservable` wrapper
+/// around one. This matters for the analyzer: member resolution,
+/// `staticType`, iteration, `[]`, `map`/`where`/spreads/collection-for all
+/// need `ObservableList` to genuinely satisfy the `List` interface, the
+/// same way the published package does.
+class ObservableList<E> extends ListBase<E> {
+  ObservableList([Iterable<E>? values]) : _values = List<E>.of(values ?? const []);
 
-  int get length => value.length;
+  final List<E> _values;
 
-  void clear() {}
-  void add(T value) {}
-  void addAll(Iterable<T> values) {}
-  void assign(T value) {}
-  void assignAll(Iterable<T> values) {}
+  @override
+  int get length => _values.length;
+
+  @override
+  set length(int newLength) => _values.length = newLength;
+
+  @override
+  E operator [](int index) => _values[index];
+
+  @override
+  void operator []=(int index, E value) => _values[index] = value;
+
+  void assign(E element) {
+    _values
+      ..clear()
+      ..add(element);
+  }
+
+  void assignAll(Iterable<E> elements) {
+    _values
+      ..clear()
+      ..addAll(elements);
+  }
+
+  void close() {}
+}
+
+/// Minimal fake of `ObservableMap<K, V>`, modeled on the real package's
+/// `MapBase`-backed shape.
+class ObservableMap<K, V> extends MapBase<K, V> {
+  ObservableMap([Map<K, V>? values]) : _values = Map<K, V>.of(values ?? const {});
+
+  final Map<K, V> _values;
+
+  @override
+  V? operator [](Object? key) => _values[key];
+
+  @override
+  void operator []=(K key, V value) => _values[key] = value;
+
+  @override
+  void clear() => _values.clear();
+
+  @override
+  Iterable<K> get keys => _values.keys;
+
+  @override
+  V? remove(Object? key) => _values.remove(key);
+
+  void assignAll(Map<K, V> elements) {
+    _values
+      ..clear()
+      ..addAll(elements);
+  }
+
+  void close() {}
+}
+
+/// Minimal fake of `ObservableSet<E>`, modeled on the real package's
+/// `SetBase`-backed shape.
+class ObservableSet<E> extends SetBase<E> {
+  ObservableSet([Iterable<E>? values]) : _values = Set<E>.of(values ?? const []);
+
+  final Set<E> _values;
+
+  @override
+  bool add(E value) => _values.add(value);
+
+  @override
+  bool contains(Object? element) => _values.contains(element);
+
+  @override
+  Iterator<E> get iterator => _values.iterator;
+
+  @override
+  int get length => _values.length;
+
+  @override
+  E? lookup(Object? element) => _values.lookup(element);
+
+  @override
+  bool remove(Object? value) => _values.remove(value);
+
+  @override
+  Set<E> toSet() => _values.toSet();
+
+  void close() {}
 }
 
 class CoreComputed<T> {
@@ -94,16 +184,20 @@ Worker once<T>(
   void Function(T value) onChange,
 ) =>
     Worker();
+// `time` mirrors the real `all_observer` API: it is a required named
+// parameter, not optional with a default. Fixtures must always pass it
+// explicitly (see requirement to keep this fake's public surface faithful
+// to the published package).
 Worker debounce<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
-  Duration time = const Duration(milliseconds: 300),
+  required Duration time,
 }) =>
     Worker();
 Worker interval<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
-  Duration time = const Duration(seconds: 1),
+  required Duration time,
 }) =>
     Worker();
 
@@ -115,6 +209,14 @@ extension ObservableExtension<T> on T {
 
 extension ObservableListExtension<T> on List<T> {
   ObservableList<T> get obs => ObservableList<T>(this);
+}
+
+extension ObservableMapExtension<K, V> on Map<K, V> {
+  ObservableMap<K, V> get obs => ObservableMap<K, V>(this);
+}
+
+extension ObservableSetExtension<E> on Set<E> {
+  ObservableSet<E> get obs => ObservableSet<E>(this);
 }
 
 extension WatchExtension<T> on CoreObservable<T> {

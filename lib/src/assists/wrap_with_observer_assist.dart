@@ -37,7 +37,7 @@ class WrapWithObserverAssist extends DartAssist {
       final unit = node.thisOrAncestorOfType<CompilationUnit>();
       if (unit == null) return;
       const importResolver = AllObserverImportResolver();
-      final importPlan = importResolver.resolve(unit);
+      final importPlan = importResolver.resolve(unit, targetNode: node);
       if (importPlan == null) return;
 
       final source = resolver.source.contents.data;

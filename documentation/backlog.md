@@ -104,6 +104,43 @@ false-positive risks.
   separate lower-bounds job. Expanding to an explicit minimum-supported SDK
   matrix remains future work.
 
+## Remaining items from the 0.5.1 stabilization pass
+
+The 0.5.1 patch addressed the `Wrap with Observer` collision/shadowing gap,
+the `effect()`-without-`Disposer`-annotation gap in `dispose_reactive_resources`,
+the `fake_all_observer` API divergences (`debounce`/`interval` requiring
+`time:`, `ObservableList`/`ObservableMap`/`ObservableSet` shape), and the
+helper/nested-closure false positives in the `*_without_reactive_read` rules.
+Still open from that review:
+
+- **Real-runtime smoke test.** `test/fixtures/smoke` proves the real
+  `custom_lint` runner loads and runs this plugin correctly, but it still
+  resolves against `test/fixtures/fake_all_observer`, not the published
+  `all_observer` package. A separate fixture pinned to a real `all_observer`
+  version (with its own `pubspec.yaml`, analyzed and fixed in CI) is needed
+  before this package can claim proven compatibility with a specific
+  `all_observer` release, rather than only with its own fake.
+- **Reactive collection reads beyond `.value`/`length`/`isEmpty`/etc.**
+  `ReactiveReadCollector` does not yet recognize `map`/`where`/`any`/`every`/
+  `contains`/`join`/iteration (`for-in`, spreads, collection-for)/`keys`/
+  `values`/`entries` on `ObservableList`/`ObservableMap`/`ObservableSet` as
+  reads. Until that lands, `*_without_reactive_read` can under-report (a
+  scope that only iterates a reactive collection may be incorrectly flagged
+  as empty) — mitigated for now by the nested-closure conservatism added in
+  0.5.1, but not fixed at the root for direct iteration reads that don't go
+  through a nested closure.
+- **`Observer.withChild` builder tracking.** Not yet covered by dedicated
+  tests distinguishing reads in the `builder` callback from the `child`
+  argument.
+- **Mixed `watch(context)` + `.value` in the same expression.** `Wrap with
+  Observer` still stays unavailable rather than guessing at a safe partial
+  wrap.
+- **CI verification of applied fixes.** CI does not yet re-run `dart format`
+  + `dart analyze` + `custom_lint` after `custom_lint --fix` to prove a
+  diagnostic disappears and no invalid code was generated; today that is
+  only checked inside each Dart test (via `resolveFixture`/golden
+  comparisons), not as a separate CI smoke step.
+
 ## Future rules
 
 - `avoid_large_observer_scope` (performance; mentioned as an example in

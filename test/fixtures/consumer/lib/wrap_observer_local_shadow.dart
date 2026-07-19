@@ -1,0 +1,20 @@
+import 'package:all_observer/all_observer.dart';
+import 'package:flutter/widgets.dart';
+
+/// A local variable named `Observer`, declared before the selected widget,
+/// shadows the unprefixed `all_observer` import at that point. Wrapping
+/// with a bare `Observer(...)` here would resolve to the local variable
+/// instead of the widget constructor, so the assist must fall back to a
+/// uniquely-prefixed import even though an unprefixed import already
+/// exists.
+class CounterView extends StatelessWidget {
+  const CounterView({super.key, required this.count});
+  final Observable<int> count;
+
+  @override
+  Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final Observer = count.value;
+    return Text('Total: ${count.value}');
+  }
+}

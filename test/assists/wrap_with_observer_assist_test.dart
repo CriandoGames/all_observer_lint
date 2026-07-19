@@ -16,6 +16,15 @@ void main() {
     'wrap_observer_show.dart': 'wrap_observer_show.golden',
     'wrap_observer_hide.dart': 'wrap_observer_hide.golden',
     'wrap_observer_subclass_alias.dart': 'wrap_observer_subclass_alias.golden',
+    // Collision/shadowing cases: the assist must fall back to a uniquely
+    // prefixed `all_observer` import instead of reusing/adding a bare
+    // `Observer` reference that could resolve to the wrong thing.
+    'wrap_observer_local_homonym.dart': 'wrap_observer_local_homonym.golden',
+    'wrap_observer_local_shadow.dart': 'wrap_observer_local_shadow.golden',
+    'wrap_observer_ambiguous_import.dart':
+        'wrap_observer_ambiguous_import.golden',
+    'wrap_observer_parameter_shadow.dart':
+        'wrap_observer_parameter_shadow.golden',
   };
 
   for (final entry in cases.entries) {
@@ -64,15 +73,5 @@ void main() {
       expect(offset, isNonNegative, reason: marker);
       expect(await assist.testRun(result, SourceRange(offset, 0)), isEmpty);
     }
-  });
-
-  test('stays unavailable when an added import would collide', () async {
-    final result = await resolveFixture('wrap_observer_local_homonym.dart');
-    final source = File(result.path).readAsStringSync();
-    final changes = await WrapWithObserverAssist().testRun(
-      result,
-      SourceRange(source.indexOf("Text('Total:"), 0),
-    );
-    expect(changes, isEmpty);
   });
 }

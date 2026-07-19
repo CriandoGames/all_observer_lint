@@ -83,7 +83,20 @@ class _ReactiveReadVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitFunctionExpression(FunctionExpression node) {
-    if (node != primaryClosure) return;
+    if (node != primaryClosure) {
+      // A nested closure (e.g. the callback passed to `.map(...)` inside a
+      // tracking scope) is a boundary for *counting* reads here, but its
+      // body may still execute synchronously as part of this scope and
+      // read a reactive value we are not analyzing. For the assist (which
+      // never sets flagPotentialHiddenReads) this stays a hard boundary:
+      // only closures reachable from event handlers etc. matter there, and
+      // being conservative would make the assist too shy to ever fire. For
+      // the empty-tracking-scope rules, though, silently ignoring nested
+      // closures risks a false "no reads at all" diagnostic, so flag it as
+      // a potential hidden read instead of asserting there is none.
+      if (flagPotentialHiddenReads) hasPotentialHiddenRead = true;
+      return;
+    }
     super.visitFunctionExpression(node);
   }
 
@@ -100,12 +113,30 @@ class _ReactiveReadVisitor extends RecursiveAstVisitor<void> {
     if (checker.isPeekInvocation(node)) return;
 
     if (node.methodName.element == null) hasUnresolvedNode = true;
-    if (flagPotentialHiddenReads &&
-        node.target == null &&
-        !checker.isAllObserverElement(node.methodName.element)) {
+    if (flagPotentialHiddenReads && _mayHideReactiveRead(node)) {
       hasPotentialHiddenRead = true;
     }
     super.visitMethodInvocation(node);
+  }
+
+  /// Whether [node] invokes something whose body we have not analyzed and
+  /// that could plausibly read a reactive value internally: a bare helper
+  /// (`helper()`), a call through `this`/an instance target
+  /// (`this.helper()`, `controller.calculate()`), or a static helper
+  /// (`Helpers.calculate()`).
+  ///
+  /// Deliberately excluded, so the empty-tracking-scope rules stay useful
+  /// rather than going silent on everything: calls resolved to
+  /// `all_observer` itself (already understood via [checker]) and calls
+  /// resolved to the Dart core SDK (`dart:core`, `dart:async`, etc. —
+  /// `toString()`, `hashCode`, `Future.then`, and similar cannot reach back
+  /// into the app's reactive state).
+  bool _mayHideReactiveRead(MethodInvocation node) {
+    final element = node.methodName.element;
+    if (checker.isAllObserverElement(element)) return false;
+    final libraryUri = element?.library?.identifier;
+    if (libraryUri != null && libraryUri.startsWith('dart:')) return false;
+    return true;
   }
 
   @override

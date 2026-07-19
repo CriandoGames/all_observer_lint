@@ -71,6 +71,7 @@ class DisposeReactiveResources extends DartLintRule {
           if (field == null) continue;
           final kind = disposalResolver.resolve(
             variable.declaredFragment?.element.type,
+            initializer,
           );
           if (kind == null) continue;
           if (!_isDirectlyOwnedResource(initializer, checker, kind)) continue;

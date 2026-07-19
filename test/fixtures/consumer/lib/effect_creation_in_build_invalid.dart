@@ -33,7 +33,7 @@ class DebounceInObserverCallbackWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Observer(() {
-      debounce(query, (value) {});
+      debounce(query, (value) {}, time: const Duration(milliseconds: 300));
       return Text(query.value);
     });
   }

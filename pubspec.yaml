@@ -2,7 +2,7 @@ name: all_observer_lint
 description: >-
   Official lint rules and automated fixes for safe, predictable, and
   efficient development with all_observer.
-version: 0.5.0
+version: 0.5.1
 homepage: https://github.com/CriandoGames/all_observer_lint
 repository: https://github.com/CriandoGames/all_observer_lint
 issue_tracker: https://github.com/CriandoGames/all_observer_lint/issues

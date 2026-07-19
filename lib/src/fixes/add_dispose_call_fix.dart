@@ -48,11 +48,14 @@ class AddDisposeCallFix extends DartFix {
       if (body is! BlockFunctionBody) return;
 
       final fieldName = node.name.lexeme;
+      final initializer = node.initializer;
+      if (initializer == null) return;
       const disposalResolver = ReactiveDisposalResolver(
         AllObserverTypeChecker(),
       );
       final kind = disposalResolver.resolve(
         node.declaredFragment?.element.type,
+        initializer,
       );
       if (kind == null) return;
       final invocation = kind.invocationFor(fieldName);

@@ -12,8 +12,10 @@ class PureListDerivation {
   final items = <int>[1, 2, 3].obs;
 
   // Pure, side-effect-free nested closures (map/where/fold) are allowed.
+  // `ObservableList<E>` is itself a `List<E>`, so it is iterated directly,
+  // not through a `.value` getter.
   late final total = Computed(
-    () => items.value.where((i) => i > 0).fold<int>(0, (a, b) => a + b),
+    () => items.where((i) => i > 0).fold<int>(0, (a, b) => a + b),
   );
 }
 
