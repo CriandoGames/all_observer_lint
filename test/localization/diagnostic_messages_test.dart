@@ -119,6 +119,9 @@ include: package:all_observer_lint/recommended.yaml
 
       expect(ruleNames, contains('avoid_reactive_creation_in_build'));
       expect(ruleNames, contains('self_referencing_computed'));
+      expect(ruleNames, contains('invalid_history_limit'));
+      expect(ruleNames, contains('async_inside_batch'));
+      expect(ruleNames, isNot(contains('observer_without_reactive_read')));
       expect(
         ruleNames,
         isNot(contains('prefer_batch_for_multiple_related_writes')),
@@ -138,6 +141,9 @@ include: package:all_observer_lint/strict.yaml
         ruleNames,
         contains('prefer_assign_all_for_reactive_list_replace'),
       );
+      expect(ruleNames, contains('observer_without_reactive_read'));
+      expect(ruleNames, contains('computed_without_reactive_read'));
+      expect(ruleNames, contains('effect_without_reactive_read'));
     });
 
     test('locale override keeps included recommended rules enabled', () async {

@@ -19,4 +19,9 @@ enum DiagnosticMessageKey {
   preferAssignAllForReactiveListReplace,
   unusedReactiveState,
   unobservedReactiveReadInBuild,
+  invalidHistoryLimit,
+  asyncInsideBatch,
+  observerWithoutReactiveRead,
+  computedWithoutReactiveRead,
+  effectWithoutReactiveRead,
 }

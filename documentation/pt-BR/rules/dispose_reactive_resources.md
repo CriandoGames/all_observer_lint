@@ -1,77 +1,58 @@
 # dispose_reactive_resources
 
-- **Categoria:** resource-management
+- **Categoria:** gerenciamento de recursos
 - **Severidade:** warning
-- **Bloqueante:** não
 - **Preset:** `recommended`, `strict`, `all`
-- **Quick fix:** sim — insere `<campo>.dispose();` como a primeira instrução de `dispose()`
-- **Versão do `all_observer`:** versões em que `effect`/`ever`/`once`/`debounce`/`interval` retornam um handle descartável, e `ObservableStream` expõe `dispose()`
+- **Quick fix:** sim, baseado no tipo estático resolvido
 
-## O que a regra faz
+## Objetivo
 
-Sinaliza um campo que guarda um effect/worker ou um `ObservableStream` que
-nunca é descartado dentro do método `dispose()` da classe proprietária.
+Sinaliza campos de recursos reativos diretamente possuídos que não são
+liberados no método `dispose()` com bloco da classe proprietária.
 
-## Motivo
+Contratos verificados:
 
-Workers não descartados continuam ouvindo depois que seu proprietário já
-não existe: callbacks obsoletos, efeitos colaterais duplicados em ciclos de
-hot reload/rebuild, e memória que nunca é liberada.
+| Tipo | Chamada gerada/reconhecida |
+|---|---|
+| `Disposer` | `campo()` |
+| `Worker`, `Workers`, `ObservableHistory`, `ReactiveScope` | `campo.dispose()` |
+| `Computed`, `ObservableFuture`, `ObservableStream` | `campo.close()` |
+| `ObservableSubscription` | `campo.cancel()` |
 
-## Exemplo incorreto
+Um `Observable` simples não é fechado automaticamente por esta regra.
+
+## Código incorreto
 
 ```dart
-class _SearchPageState extends State<SearchPage> {
-  late final worker = debounce(query, onSearch, time: const Duration(milliseconds: 400));
+late final Disposer disposeEffect = effect(() => count.value);
 
-  @override
-  void dispose() {
-    super.dispose(); // worker nunca é descartado
-  }
+void dispose() {
+  super.dispose();
 }
 ```
 
-## Exemplo correto
+## Código correto
 
 ```dart
-class _SearchPageState extends State<SearchPage> {
-  late final worker = debounce(query, onSearch, time: const Duration(milliseconds: 400));
-
-  @override
-  void dispose() {
-    worker.dispose();
-    super.dispose();
-  }
+void dispose() {
+  disposeEffect();
+  super.dispose();
 }
 ```
 
-## Exceções
+## Limitações e falsos positivos possíveis
 
-Uma classe sem seu próprio método `dispose()` não é sinalizada: sem um
-método de ciclo de vida para verificar, a propriedade do recurso é
-ambígua, e esta regra prefere ficar em silêncio a arriscar um chute.
+Somente campos com inicializador direto, resolvido e de posse comprovada são
+verificados. Posse por helper/factory e classes sem `dispose()` próprio ficam
+silenciosas. Uma chamada em fluxo condicional é aceita; não há prova sensível a
+caminhos. Delegar descarte a helper pode gerar falso positivo.
 
-## Limitações (primeira versão)
+## Quando ignorar
 
-- Apenas campos são verificados, não variáveis locais.
-- O inicializador do campo precisa ser uma expressão direta de
-  `effect`/`ever`/`once`/`debounce`/`interval`/`ObservableStream(...)`;
-  transferência de propriedade do descarte por meio de um método auxiliar
-  ainda não é rastreada.
-- O descarte é reconhecido como qualquer chamada `<campo>.dispose()` em
-  qualquer parte de `dispose()`, independentemente do fluxo de controle
-  (por exemplo, dentro de um `if`) — uma versão futura pode restringir isso
-  conforme falsos negativos reais forem coletados.
+Ignore quando o descarte for delegado intencionalmente por uma abstração de
+ownership que a regra local não consegue seguir.
 
-## Como desativar
+## Fix ou assist
 
-```yaml
-custom_lint:
-  rules:
-    - dispose_reactive_resources: false
-```
-
-## Evidência
-
-Severidade `warning`; sem alegação de bloqueio, sem documento de evidência
-exigido.
+O quick fix insere a chamada correta para o tipo antes de `super.dispose()`.
+Ele não cria lifecycle para classes arbitrárias. Não há assist associado.

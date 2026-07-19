@@ -1,4 +1,8 @@
+// ignore_for_file: experimental_member_use
+
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart' hide LintCode;
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
@@ -8,25 +12,22 @@ import '../localization/diagnostic_message_key.dart';
 import '../localization/diagnostic_messages.dart';
 import '../localization/locale_resolver.dart';
 import '../utils/all_observer_type_checker.dart';
+import '../utils/reactive_disposal_resolver.dart';
 
 /// `dispose_reactive_resources`
 ///
-/// Flags fields holding an effect/worker (`effect`, `ever`, `once`,
-/// `debounce`, `interval`) or an `ObservableStream` subscription that is
-/// never disposed by the owning class's `dispose()` method.
+/// Flags directly owned fields whose resolved all_observer disposal contract
+/// is not fulfilled by the owning class's `dispose()` method.
 ///
 /// Scope of this first version, kept intentionally narrow to avoid false
 /// positives:
 ///  * only fields (not local variables) are checked, since only fields have
 ///    a well-defined owning lifecycle method;
 ///  * the owning class must declare its own `dispose()` method;
-///  * the field's initializer must be a direct
-///    `effect(...)`/`ever(...)`/`once(...)`/`debounce(...)`/`interval(...)`
-///    call or `ObservableStream(...)` creation — indirection through a
-///    helper method is not tracked in this version (see
-///    `documentation/backlog.md`);
-///  * disposal is recognized as any `<field>.dispose()` call anywhere in
-///    the `dispose()` method body.
+///  * the field's initializer must be a direct, semantically resolved owned
+///    resource creation; helper/factory ownership is not inferred;
+///  * the required callback/`dispose`/`close`/`cancel` call is selected from
+///    the field's resolved static type and matched back to the field element.
 ///
 /// See `documentation/en/rules/dispose_reactive_resources.md`.
 class DisposeReactiveResources extends DartLintRule {
@@ -59,15 +60,21 @@ class DisposeReactiveResources extends DartLintRule {
       final disposeMethod = _findDisposeMethod(classNode);
       if (disposeMethod == null) return;
 
-      final disposedFieldNames = _disposedFieldNames(disposeMethod);
+      const disposalResolver = ReactiveDisposalResolver(checker);
 
       for (final member in classNode.members) {
         if (member is! FieldDeclaration) continue;
         for (final variable in member.fields.variables) {
           final initializer = variable.initializer;
           if (initializer == null) continue;
-          if (!_isDisposableReactiveResource(initializer, checker)) continue;
-          if (disposedFieldNames.contains(variable.name.lexeme)) continue;
+          final field = _canonicalElement(variable.declaredFragment?.element);
+          if (field == null) continue;
+          final kind = disposalResolver.resolve(
+            variable.declaredFragment?.element.type,
+          );
+          if (kind == null) continue;
+          if (!_isDirectlyOwnedResource(initializer, checker, kind)) continue;
+          if (_isDisposed(disposeMethod, field, kind)) continue;
 
           reporter.atNode(variable, code);
         }
@@ -86,40 +93,91 @@ class DisposeReactiveResources extends DartLintRule {
     return null;
   }
 
-  bool _isDisposableReactiveResource(
+  bool _isDirectlyOwnedResource(
     Expression initializer,
     AllObserverTypeChecker checker,
+    ReactiveDisposalKind kind,
   ) {
     if (initializer is MethodInvocation) {
-      return checker.isEffectOrWorkerInvocation(initializer);
+      if (checker.isEffectOrWorkerInvocation(initializer)) return true;
+      return checker.isAllObserverElement(initializer.methodName.element) &&
+          kind != ReactiveDisposalKind.invokeCallback;
     }
     if (initializer is InstanceCreationExpression) {
-      return checker.isObservableStreamCreation(initializer);
+      return checker.isAllObserverElement(initializer.constructorName.element);
     }
     return false;
   }
 
-  Set<String> _disposedFieldNames(MethodDeclaration disposeMethod) {
-    final names = <String>{};
+  bool _isDisposed(
+    MethodDeclaration disposeMethod,
+    Element field,
+    ReactiveDisposalKind kind,
+  ) {
     final body = disposeMethod.body;
-    if (body is! BlockFunctionBody) return names;
-
-    for (final statement in body.block.statements) {
-      if (statement is! ExpressionStatement) continue;
-      final expression = statement.expression;
-      if (expression is! MethodInvocation) continue;
-      if (expression.methodName.name != disposeMethodName) continue;
-
-      final target = expression.target;
-      if (target is SimpleIdentifier) {
-        names.add(target.name);
-      } else if (target is PropertyAccess && target.target is ThisExpression) {
-        names.add(target.propertyName.name);
-      }
-    }
-    return names;
+    if (body is! BlockFunctionBody) return false;
+    final visitor = _DisposalCallVisitor(field, kind);
+    body.block.accept(visitor);
+    return visitor.found;
   }
 
   @override
   List<Fix> getFixes() => [AddDisposeCallFix()];
+}
+
+class _DisposalCallVisitor extends RecursiveAstVisitor<void> {
+  _DisposalCallVisitor(this.field, this.kind);
+
+  final Element field;
+  final ReactiveDisposalKind kind;
+  bool found = false;
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    if (found) return;
+    if (kind == ReactiveDisposalKind.invokeCallback) {
+      if (node.target == null &&
+          node.argumentList.arguments.isEmpty &&
+          _canonicalElement(node.methodName.element) == field) {
+        found = true;
+        return;
+      }
+    } else if (node.methodName.name == kind.memberName &&
+        node.argumentList.arguments.isEmpty &&
+        _targetElement(node.target) == field) {
+      found = true;
+      return;
+    }
+    super.visitMethodInvocation(node);
+  }
+
+  @override
+  void visitFunctionExpressionInvocation(FunctionExpressionInvocation node) {
+    if (found) return;
+    if (kind == ReactiveDisposalKind.invokeCallback &&
+        node.argumentList.arguments.isEmpty &&
+        _targetElement(node.function) == field) {
+      found = true;
+      return;
+    }
+    super.visitFunctionExpressionInvocation(node);
+  }
+}
+
+Element? _targetElement(Expression? expression) {
+  if (expression is SimpleIdentifier) {
+    return _canonicalElement(expression.element);
+  }
+  if (expression is PropertyAccess && expression.target is ThisExpression) {
+    return _canonicalElement(expression.propertyName.element);
+  }
+  return null;
+}
+
+Element? _canonicalElement(Element? element) {
+  if (element == null) return null;
+  if (element is PropertyAccessorElement) {
+    return element.variable?.baseElement ?? element.baseElement;
+  }
+  return element.baseElement;
 }

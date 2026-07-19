@@ -1,0 +1,17 @@
+name: all_observer_lint_smoke
+publish_to: none
+version: 0.0.0
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  all_observer:
+    path: ../fake_all_observer
+
+dev_dependencies:
+  custom_lint: ^0.8.1
+  all_observer_lint:
+    path: ../../..

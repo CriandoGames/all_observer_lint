@@ -74,6 +74,21 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
         'Este valor reativo e lido durante o build sem um contexto observado. '
         'Envolva a UI renderizada em Observer ou leia com watch(context) para '
         'o widget atualizar quando o valor mudar.',
+    DiagnosticMessageKey.invalidHistoryLimit:
+        'O limite do historico deve ser maior que zero. Use uma constante '
+        'positiva ou omita limit para usar o valor padrao.',
+    DiagnosticMessageKey.asyncInsideBatch:
+        'Observable.batch e sincrono. Nao passe um callback async; aguarde o '
+        'trabalho antes do batch e mantenha as escritas agrupadas sincronas.',
+    DiagnosticMessageKey.observerWithoutReactiveRead:
+        'Este builder de Observer nao possui leitura reativa rastreada '
+        'visivel estaticamente e nao reconstruira por estado all_observer.',
+    DiagnosticMessageKey.computedWithoutReactiveRead:
+        'Este callback de Computed nao possui leitura reativa rastreada '
+        'visivel estaticamente e nao tem dependencia reativa.',
+    DiagnosticMessageKey.effectWithoutReactiveRead:
+        'Este callback de effect nao possui leitura reativa rastreada visivel '
+        'estaticamente e nao executara novamente por estado all_observer.',
   };
 
   @override

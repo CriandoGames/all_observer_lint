@@ -1,96 +1,79 @@
-import 'package:all_observer_lint/src/utils/all_observer_type_checker.dart';
-import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/ast/visitor.dart';
+import 'dart:io';
+
+import 'package:all_observer_lint/src/rules/dispose_reactive_resources.dart';
+import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../support/custom_lint_test_support.dart';
 import '../support/resolve_fixture.dart';
 
-/// Mirrors `DisposeReactiveResources.run` (see that file) against resolved
-/// fixtures.
 void main() {
-  const checker = AllObserverTypeChecker();
-
-  int countOffenses(CompilationUnit unit) {
-    var count = 0;
-    unit.accept(_Visitor(checker, () => count++));
-    return count;
-  }
-
   group('dispose_reactive_resources', () {
-    test('flags workers and ObservableStream fields never disposed', () async {
-      final result = await resolveFixture(
-        'dispose_reactive_resources_invalid.dart',
-      );
-      expect(countOffenses(result.unit), 2);
-    });
+    test(
+      'flags Worker, Disposer, and ObservableStream by static type',
+      () async {
+        final result = await resolveFixture(
+          'dispose_reactive_resources_invalid.dart',
+        );
+        final rule = DisposeReactiveResources(configs: await testConfigs());
 
-    test('does not flag disposed resources, or classes without their own '
-        'dispose() (ownership ambiguous)', () async {
+        final errors = await rule.testRun(result);
+
+        expect(errors, hasLength(9));
+      },
+    );
+
+    test('recognizes worker.dispose() and disposeEffect()', () async {
       final result = await resolveFixture(
         'dispose_reactive_resources_valid.dart',
       );
-      expect(countOffenses(result.unit), 0);
+      final rule = DisposeReactiveResources(configs: await testConfigs());
+
+      expect(await rule.testRun(result), isEmpty);
     });
+
+    test(
+      'quick fix invokes Disposer before super.dispose and reanalyzes',
+      () async {
+        final result = await resolveFixture('dispose_effect_fix_input.dart');
+        final source = File(result.path).readAsStringSync();
+        final rule = DisposeReactiveResources(configs: await testConfigs());
+        final errors = await rule.testRun(result);
+        expect(errors, hasLength(1));
+
+        final fix = rule.getFixes().single as DartFix;
+        final changes = await fix.testRun(result, errors.single, errors);
+        expect(changes, hasLength(1));
+        final transformed = applyPrioritizedChange(source, changes.single);
+
+        final tempName = '_dispose_effect_fix_result.dart';
+        final tempFile = File(p.join(consumerFixtureRoot, 'lib', tempName));
+        addTearDown(() {
+          if (tempFile.existsSync()) tempFile.deleteSync();
+        });
+        tempFile.writeAsStringSync(transformed);
+        final format = await Process.run('dart', ['format', tempFile.path]);
+        expect(
+          format.exitCode,
+          0,
+          reason: '${format.stdout}\n${format.stderr}',
+        );
+
+        final formatted = tempFile.readAsStringSync();
+        final golden = File(
+          p.join(
+            Directory.current.path,
+            'test',
+            'goldens',
+            'dispose_effect_fix.golden',
+          ),
+        ).readAsStringSync();
+        expect(formatted, golden);
+
+        final resolved = await resolveFixture(tempName);
+        expect(await rule.testRun(resolved), isEmpty);
+      },
+    );
   });
-}
-
-class _Visitor extends RecursiveAstVisitor<void> {
-  _Visitor(this._checker, this._onOffense);
-
-  final AllObserverTypeChecker _checker;
-  final void Function() _onOffense;
-
-  @override
-  void visitClassDeclaration(ClassDeclaration node) {
-    final disposeMethod = _findDisposeMethod(node);
-    if (disposeMethod != null) {
-      final disposedNames = _disposedFieldNames(disposeMethod);
-      for (final member in node.members) {
-        if (member is! FieldDeclaration) continue;
-        for (final variable in member.fields.variables) {
-          final initializer = variable.initializer;
-          if (initializer == null) continue;
-          if (!_isDisposableResource(initializer)) continue;
-          if (!disposedNames.contains(variable.name.lexeme)) _onOffense();
-        }
-      }
-    }
-    super.visitClassDeclaration(node);
-  }
-
-  MethodDeclaration? _findDisposeMethod(ClassDeclaration node) {
-    for (final member in node.members) {
-      if (member is MethodDeclaration &&
-          member.name.lexeme == 'dispose' &&
-          !member.isStatic) {
-        return member;
-      }
-    }
-    return null;
-  }
-
-  bool _isDisposableResource(Expression initializer) {
-    if (initializer is MethodInvocation) {
-      return _checker.isEffectOrWorkerInvocation(initializer);
-    }
-    if (initializer is InstanceCreationExpression) {
-      return _checker.isObservableStreamCreation(initializer);
-    }
-    return false;
-  }
-
-  Set<String> _disposedFieldNames(MethodDeclaration disposeMethod) {
-    final names = <String>{};
-    final body = disposeMethod.body;
-    if (body is! BlockFunctionBody) return names;
-    for (final statement in body.block.statements) {
-      if (statement is! ExpressionStatement) continue;
-      final expression = statement.expression;
-      if (expression is! MethodInvocation) continue;
-      if (expression.methodName.name != 'dispose') continue;
-      final target = expression.target;
-      if (target is SimpleIdentifier) names.add(target.name);
-    }
-    return names;
-  }
 }

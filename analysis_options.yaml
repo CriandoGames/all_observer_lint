@@ -13,6 +13,7 @@ analyzer:
     invalid_null_aware_operator: ignore
   exclude:
     - "test/fixtures/**"
+    - "test/goldens/**"
     - "example/**"
 
 linter:

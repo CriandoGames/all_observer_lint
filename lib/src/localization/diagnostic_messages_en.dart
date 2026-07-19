@@ -65,6 +65,21 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
         'This reactive value is read during build without an observed context. '
         'Wrap the rendered UI in Observer or read it with watch(context) so '
         'the widget updates when the value changes.',
+    DiagnosticMessageKey.invalidHistoryLimit:
+        'History limit must be greater than zero. Use a positive constant or '
+        'omit limit to use the default.',
+    DiagnosticMessageKey.asyncInsideBatch:
+        'Observable.batch is synchronous. Do not pass an async callback; '
+        'await work before the batch and keep the batched writes synchronous.',
+    DiagnosticMessageKey.observerWithoutReactiveRead:
+        'This Observer builder has no statically visible tracked reactive read '
+        'and therefore cannot rebuild from all_observer state.',
+    DiagnosticMessageKey.computedWithoutReactiveRead:
+        'This Computed callback has no statically visible tracked reactive '
+        'read and therefore has no reactive dependency.',
+    DiagnosticMessageKey.effectWithoutReactiveRead:
+        'This effect callback has no statically visible tracked reactive read '
+        'and therefore will not rerun from all_observer state.',
   };
 
   @override

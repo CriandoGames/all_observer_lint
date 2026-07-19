@@ -11,4 +11,8 @@ void main() {
     // minimal entrypoint smoke test that doesn't depend on that.
     expect(createPlugin(), isA<PluginBase>());
   });
+
+  test('plugin registers Wrap with Observer assist', () {
+    expect(createPlugin().getAssists(), hasLength(1));
+  });
 }

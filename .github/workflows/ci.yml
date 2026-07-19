@@ -24,6 +24,7 @@ jobs:
           cd test/fixtures/fake_all_observer && flutter pub get
           cd ../another_package && dart pub get
           cd ../consumer && flutter pub get
+          cd ../smoke && flutter pub get
 
       - name: Install dependencies (example)
         run: cd example && flutter pub get
@@ -36,6 +37,15 @@ jobs:
 
       - name: Run tests
         run: dart test
+
+      - name: Smoke-test plugin and runner fixes
+        run: |
+          cd test/fixtures/smoke
+          dart run custom_lint
+          cp fix_target.dart.template lib/fix_target.dart
+          trap 'rm -f lib/fix_target.dart' EXIT
+          dart run custom_lint --fix --no-fatal-infos --no-fatal-warnings
+          grep -q 'disposeEffect();' lib/fix_target.dart
 
   lower-bounds:
     name: Lower bounds
@@ -55,6 +65,7 @@ jobs:
           cd test/fixtures/fake_all_observer && flutter pub get
           cd ../another_package && dart pub get
           cd ../consumer && flutter pub get
+          cd ../smoke && flutter pub get
 
       - name: Analyze with minimum versions
         run: dart analyze

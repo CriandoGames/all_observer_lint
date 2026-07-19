@@ -12,16 +12,22 @@ class CoreObservable<T> {
   T _value;
   T get value => _value;
   set value(T next) => _value = next;
+  T peek() => _value;
+  void close() {}
 }
 
 class Observable<T> extends CoreObservable<T> {
   Observable(super.value);
 
   static void batch(void Function() callback) => callback();
+  ObservableSubscription listen(void Function(T value) listener) =>
+      ObservableSubscription();
 }
 
 class ObservableList<T> extends CoreObservable<List<T>> {
   ObservableList(super.value);
+
+  int get length => value.length;
 
   void clear() {}
   void add(T value) {}
@@ -34,6 +40,7 @@ class CoreComputed<T> {
   CoreComputed(this._compute);
   final T Function() _compute;
   T get value => _compute();
+  void close() {}
 }
 
 class Computed<T> extends CoreComputed<T> {
@@ -46,36 +53,59 @@ class ObservableFuture<T> extends CoreObservable<T?> {
 
 class ObservableStream<T> extends CoreObservable<T?> {
   ObservableStream(Stream<T> Function() task) : super(null);
+}
+
+typedef Disposer = void Function();
+
+class Worker {
   void dispose() {}
 }
 
-class Disposer {
+class Workers {
+  Workers(this.workers);
+  final List<Worker> workers;
   void dispose() {}
 }
 
-Disposer effect(void Function() callback) => Disposer();
-Disposer ever<T>(
+class ObservableSubscription {
+  void cancel() {}
+}
+
+class ObservableHistory<T> {
+  ObservableHistory(this.observable, {this.limit = 100});
+  final Observable<T> observable;
+  final int limit;
+  void dispose() {}
+}
+
+class ReactiveScope {
+  T run<T>(T Function() callback) => callback();
+  void dispose() {}
+}
+
+Disposer effect(void Function() callback) => () {};
+Worker ever<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange,
 ) =>
-    Disposer();
-Disposer once<T>(
+    Worker();
+Worker once<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange,
 ) =>
-    Disposer();
-Disposer debounce<T>(
+    Worker();
+Worker debounce<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
   Duration time = const Duration(milliseconds: 300),
 }) =>
-    Disposer();
-Disposer interval<T>(
+    Worker();
+Worker interval<T>(
   CoreObservable<T> observable,
   void Function(T value) onChange, {
   Duration time = const Duration(seconds: 1),
 }) =>
-    Disposer();
+    Worker();
 
 void batch(void Function() callback) => callback();
 
@@ -91,9 +121,24 @@ extension WatchExtension<T> on CoreObservable<T> {
   T watch(BuildContext context) => value;
 }
 
+extension HistoryExtension<T> on Observable<T> {
+  ObservableHistory<T> withHistory({int limit = 100}) =>
+      ObservableHistory<T>(this, limit: limit);
+}
+
+T untracked<T>(T Function() callback) => callback();
+
 class Observer extends StatelessWidget {
   const Observer(this.builder, {super.key});
   final Widget Function() builder;
+
+  const Observer.withChild({
+    required Widget Function(BuildContext, Widget) builder,
+    required Widget child,
+    super.key,
+  }) : builder = _empty;
+
+  static Widget _empty() => const SizedBox.shrink();
 
   @override
   Widget build(BuildContext context) => builder();

@@ -19,7 +19,10 @@ import 'package:path/path.dart' as p;
 /// `test/fixtures/consumer` (CI does this automatically; see
 /// `.github/workflows/ci.yml`). If dependencies haven't been fetched yet,
 /// this throws with a message pointing at that command.
-Future<ResolvedUnitResult> resolveFixture(String fileName) async {
+Future<ResolvedUnitResult> resolveFixture(
+  String fileName, {
+  bool allowErrors = false,
+}) async {
   final packageConfig = File(
     p.join(consumerFixtureRoot, '.dart_tool', 'package_config.json'),
   );
@@ -43,7 +46,7 @@ Future<ResolvedUnitResult> resolveFixture(String fileName) async {
   final errors = result.errors
       .where((error) => error.errorCode.errorSeverity == ErrorSeverity.ERROR)
       .toList();
-  if (errors.isNotEmpty) {
+  if (!allowErrors && errors.isNotEmpty) {
     throw StateError(
       'Fixture $fileName has analysis errors, results would be unreliable:\n'
       '${errors.join('\n')}',

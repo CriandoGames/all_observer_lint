@@ -27,3 +27,5 @@ custom_lint:
     - avoid_io_in_computed
     - avoid_observable_write_during_observer_build
     - self_referencing_computed
+    - invalid_history_limit
+    - async_inside_batch

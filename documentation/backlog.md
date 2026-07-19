@@ -111,3 +111,24 @@ false-positive risks.
 - Broader reactive-collection-specific rules once the actual `all_observer`
   collection API is available to key checks on beyond the implemented
   `ObservableList` replacement pattern.
+
+## Current resolutions and deferred transformations
+
+The plugin wiring and real-runtime verification items above are resolved for
+this change: CI now uses `test/fixtures/smoke` with `dart run custom_lint`,
+including a temporary runner-applied fix, and disposal/Observer/history/batch/
+async/scope/worker/subscription contracts were checked against the sibling
+runtime. Repeat runtime verification before each compatibility release.
+
+Still deferred:
+
+- minimum-reactive-subtree wrapping and automatic Observer scope reduction;
+- `setState`, `ValueNotifier`, `ChangeNotifier`, listener, Future, Stream, and
+  complete `AsyncState` migrations;
+- Observable-to-plain-value conversion and cross-file migrations;
+- snippets, completion, custom hover, and fix-on-save, which need
+  editor-specific integration beyond portable `custom_lint`;
+- DevTools, which needs runtime protocol and UI work;
+- `observer_scope_too_large`, `expensive_equals`, and
+  `throwing_batch_contract`, which need measurable evidence and precise
+  semantic contracts.

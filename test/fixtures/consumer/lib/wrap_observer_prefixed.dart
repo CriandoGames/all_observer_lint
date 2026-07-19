@@ -1,0 +1,12 @@
+import 'package:all_observer/all_observer.dart' as ao;
+import 'package:flutter/widgets.dart';
+
+class CounterView extends StatelessWidget {
+  const CounterView({super.key, required this.count});
+  final ao.Observable<int> count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Total: ${count.value}');
+  }
+}

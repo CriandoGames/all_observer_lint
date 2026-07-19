@@ -1,75 +1,59 @@
 # dispose_reactive_resources
 
-- **Category:** resource-management
+- **Category:** resource management
 - **Severity:** warning
-- **Blocking:** no
 - **Preset:** `recommended`, `strict`, `all`
-- **Quick fix:** yes — inserts `<field>.dispose();` as the first statement of `dispose()`
-- **Applies to `all_observer`:** versions where `effect`/`ever`/`once`/`debounce`/`interval` return a disposable handle, and `ObservableStream` exposes `dispose()`
+- **Quick fix:** yes, based on the resolved static type
 
-## What it does
+## Purpose
 
-Flags a field holding an effect/worker or an `ObservableStream` that is
-never disposed inside the owning class's `dispose()` method.
+Reports directly owned reactive resource fields that are not released in the
+owning class's block-bodied `dispose()` method.
 
-## Why
+The verified contracts are:
 
-Undisposed workers keep listening after their owner is gone: stale
-callbacks, duplicated side effects on hot reload/rebuild cycles, and
-memory that never gets released.
+| Type | Generated/recognized call |
+|---|---|
+| `Disposer` | `field()` |
+| `Worker`, `Workers`, `ObservableHistory`, `ReactiveScope` | `field.dispose()` |
+| `Computed`, `ObservableFuture`, `ObservableStream` | `field.close()` |
+| `ObservableSubscription` | `field.cancel()` |
 
-## Incorrect code
+A plain `Observable` is intentionally not auto-closed by this rule.
+
+## Incorrect
 
 ```dart
-class _SearchPageState extends State<SearchPage> {
-  late final worker = debounce(query, onSearch, time: const Duration(milliseconds: 400));
+late final Disposer disposeEffect = effect(() => count.value);
 
-  @override
-  void dispose() {
-    super.dispose(); // worker is never disposed
-  }
+void dispose() {
+  super.dispose();
 }
 ```
 
-## Correct code
+## Correct
 
 ```dart
-class _SearchPageState extends State<SearchPage> {
-  late final worker = debounce(query, onSearch, time: const Duration(milliseconds: 400));
-
-  @override
-  void dispose() {
-    worker.dispose();
-    super.dispose();
-  }
+void dispose() {
+  disposeEffect();
+  super.dispose();
 }
 ```
 
-## Exceptions
+## Limitations and possible false positives
 
-A class with no `dispose()` method of its own is not flagged: without a
-lifecycle method to check against, ownership is ambiguous and this rule
-would rather stay silent than guess.
+Only fields with a direct, semantically resolved owned initializer are checked.
+Helper/factory ownership and classes without their own `dispose()` are skipped.
+A call inside conditional control flow is accepted; path-sensitive lifecycle
+proof is not attempted. Delegating disposal to a helper can therefore report a
+false positive.
 
-## Limitations (first version)
+## When to ignore
 
-- Only fields are checked, not local variables.
-- The field's initializer must be a direct
-  `effect`/`ever`/`once`/`debounce`/`interval`/`ObservableStream(...)`
-  expression; disposal ownership transferred through a helper method is
-  not tracked yet.
-- Disposal is recognized as any `<field>.dispose()` call anywhere in
-  `dispose()`, regardless of control flow (e.g. inside an `if`) — a future
-  version may tighten this once real-world false negatives are collected.
+Ignore when disposal is deliberately delegated through an ownership abstraction
+that the local rule cannot follow.
 
-## Disabling
+## Fix or assist
 
-```yaml
-custom_lint:
-  rules:
-    - dispose_reactive_resources: false
-```
-
-## Evidence
-
-Severity is `warning`; no blocking claim, no evidence document required.
+The quick fix inserts the type-correct call before `super.dispose()`. It does
+not synthesize lifecycle methods for arbitrary classes. No assist is attached.

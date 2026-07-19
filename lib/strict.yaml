@@ -17,3 +17,6 @@ custom_lint:
     - prefer_assign_all_for_reactive_list_replace
     - unused_reactive_state
     - unobserved_reactive_read_in_build
+    - observer_without_reactive_read
+    - computed_without_reactive_read
+    - effect_without_reactive_read

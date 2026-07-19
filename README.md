@@ -33,7 +33,7 @@ Your `pubspec.yaml` should contain:
 ```yaml
 dev_dependencies:
   custom_lint: ^0.8.0
-  all_observer_lint: ^0.4.0
+  all_observer_lint: ^0.5.0
 ```
 
 `custom_lint` is required because it is the analyzer runner that loads custom
@@ -125,20 +125,29 @@ class _CounterPageState extends State<CounterPage> {
 
 ## Quick Fixes
 
-Some rules provide IDE quick fixes. For example, `dispose_reactive_resources`
-can add a missing `dispose()` call:
+Some rules provide IDE quick fixes. `dispose_reactive_resources` selects the
+call from the field's resolved type. In particular, an `effect()` disposer is
+invoked as a callback:
 
 ```dart
 class _SearchPageState extends State<SearchPage> {
-  late final worker = debounce(query, onSearch);
+  late final disposeEffect = effect(() => query.value);
 
   @override
   void dispose() {
-    worker.dispose();
+    disposeEffect();
     super.dispose();
   }
 }
 ```
+
+## Assists
+
+Select a resolved Widget expression containing an immediate reactive read and
+choose **Wrap with Observer**. It generates the public
+`Observer(() => widget)` constructor, reuses prefixed imports, and adds an
+import when safe. It stays unavailable in callbacks, tracked contexts,
+`watch(context)`, constant contexts, and unresolved code.
 
 ## Presets
 
@@ -167,6 +176,11 @@ class _SearchPageState extends State<SearchPage> {
 | [`prefer_assign_all_for_reactive_list_replace`](documentation/en/rules/prefer_assign_all_for_reactive_list_replace.md) | `ObservableList.clear()` followed by `add`/`addAll`; prefer `assign`/`assignAll`. |
 | [`unused_reactive_state`](documentation/en/rules/unused_reactive_state.md) | Private reactive fields or top-level variables that are never used in the same file. |
 | [`unobserved_reactive_read_in_build`](documentation/en/rules/unobserved_reactive_read_in_build.md) | Reactive `.value` reads rendered in `build` without `Observer` or `watch(context)`. |
+| [`invalid_history_limit`](documentation/en/rules/invalid_history_limit.md) | Known non-positive `ObservableHistory` limits. |
+| [`async_inside_batch`](documentation/en/rules/async_inside_batch.md) | Directly async callbacks passed to `Observable.batch`. |
+| [`observer_without_reactive_read`](documentation/en/rules/observer_without_reactive_read.md) | `Observer` builders with no proven tracked read (strict/all). |
+| [`computed_without_reactive_read`](documentation/en/rules/computed_without_reactive_read.md) | `Computed` callbacks with no proven tracked read (strict/all). |
+| [`effect_without_reactive_read`](documentation/en/rules/effect_without_reactive_read.md) | `effect` callbacks with no proven tracked read (strict/all). |
 
 ## More Documentation
 

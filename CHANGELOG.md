@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0
+
+- Fixed `dispose_reactive_resources` and its quick fix to use resolved disposal
+  contracts: callback invocation, `dispose()`, `close()`, or `cancel()`.
+- Added the `Wrap with Observer` assist with semantic Widget/read checks,
+  callback/tracking/const guards, and safe import handling.
+- Added recommended warnings `invalid_history_limit` and `async_inside_batch`.
+- Added strict/all info diagnostics `observer_without_reactive_read`,
+  `computed_without_reactive_read`, and `effect_without_reactive_read`.
+- Added full-file golden transformation tests, post-edit formatting and
+  reanalysis, idempotency checks, and a real `custom_lint` runner smoke project.
+
 ## 0.4.0
 
 Breaking configuration change:

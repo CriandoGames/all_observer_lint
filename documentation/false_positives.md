@@ -16,6 +16,15 @@ is arguably not a real problem, and why the trade-off was accepted.
 
 ## Structural false-positive prevention (working as intended, listed for clarity)
 
+The three `*_without_reactive_read` diagnostics are deliberately `info` and
+strict/all only. They suppress ordinary helper calls, unresolved code, and
+unsupported callback forms because hidden dependencies cannot be disproved
+locally. `invalid_history_limit` matches only known constants on resolved
+official APIs; a private runtime fork with a different limit contract is the
+only known disagreement. The runtime API identities used here were verified
+against the sibling real repository; future runtime versions can still require
+checker updates.
+
 These are **not** false positives; they are the specific defenses this
 package puts in place and are tested in `test/fixtures/consumer/lib/*_valid.dart`:
 

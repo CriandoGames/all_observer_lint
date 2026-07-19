@@ -10,7 +10,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  late final Disposer worker = debounce(widget.query, _onSearch);
+  late final Worker worker = debounce(widget.query, _onSearch);
 
   void _onSearch(String value) {}
 
@@ -18,7 +18,7 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     final unrelatedEffect = effect(() {});
-    unrelatedEffect.dispose();
+    unrelatedEffect();
   }
 
   @override

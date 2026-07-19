@@ -1,0 +1,15 @@
+import 'package:all_observer/all_observer.dart';
+import 'package:flutter/widgets.dart';
+
+class FixTarget extends State<StatefulWidget> {
+  final count = Observable(0);
+  late final Disposer disposeEffect = effect(() => count.value.toString());
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
+}

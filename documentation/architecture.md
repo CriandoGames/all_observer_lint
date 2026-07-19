@@ -127,6 +127,21 @@ wiring itself is bug-free end to end — a smoke test against the real
 `custom_lint` CLI is future work once a maintainer has Flutter/`custom_lint`
 installed locally to validate it.
 
+## Current semantic and transformation infrastructure
+
+The current implementation also centralizes `ReactiveReadCollector`,
+`ReactiveDisposalResolver`, `TrackingCallbackResolver`, and
+`AllObserverImportResolver`. Together they keep deferred closures, tracking
+escape hatches, disposal contracts, and import combinators consistent across
+rules and assists.
+
+New rules execute through `DartLintRule.testRun`. Transformation tests invoke
+the real `DartFix`/`DartAssist`, apply full-file edits, format, resolve again,
+verify the diagnostic disappears, and check idempotency. CI loads all rules and
+assists through `dart run custom_lint` in `test/fixtures/smoke` and applies the
+disposal fix to a temporary copied target. This supersedes the older initial
+testing-strategy note above that described runner coverage as future work.
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and

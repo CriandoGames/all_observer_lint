@@ -53,9 +53,16 @@ class AllObserverTypeChecker {
     'ObservableList',
     'CoreObservableList',
   };
+  static const Set<String> _observableMapClassNames = {'ObservableMap'};
+  static const Set<String> _observableSetClassNames = {'ObservableSet'};
 
   static const Set<String> _observableFutureClassNames = {'ObservableFuture'};
   static const Set<String> _observableStreamClassNames = {'ObservableStream'};
+  static const Set<String> _workerClassNames = {'Worker'};
+  static const Set<String> _workersClassNames = {'Workers'};
+  static const Set<String> _historyClassNames = {'ObservableHistory'};
+  static const Set<String> _subscriptionClassNames = {'ObservableSubscription'};
+  static const Set<String> _reactiveScopeClassNames = {'ReactiveScope'};
 
   static const Set<String> _observerWidgetClassNames = {'Observer'};
 
@@ -70,6 +77,10 @@ class AllObserverTypeChecker {
   static const String _batchFunctionName = 'batch';
   static const String _watchMethodName = 'watch';
   static const String _obsExtensionGetterName = 'obs';
+  static const String _disposerTypeAliasName = 'Disposer';
+  static const String _withHistoryMethodName = 'withHistory';
+  static const String _peekMethodName = 'peek';
+  static const String _untrackedFunctionName = 'untracked';
 
   bool _isFromAllObserver(Element? element) {
     final libraryUri = element?.library?.identifier;
@@ -88,6 +99,9 @@ class AllObserverTypeChecker {
   /// without depending on the Flutter SDK from this package's pubspec.
   bool isFlutterFrameworkElement(Element? element) => _isFromFlutter(element);
 
+  /// Whether [element] is declared by any `package:all_observer/` library.
+  bool isAllObserverElement(Element? element) => _isFromAllObserver(element);
+
   /// Walks the supertype chain of [type] (including mixins/interfaces)
   /// looking for a class named [names], resolved from `all_observer`.
   bool _hasReactiveSupertypeNamed(DartType? type, Set<String> names) {
@@ -101,6 +115,22 @@ class AllObserverTypeChecker {
       if (names.contains(element.name) && _isFromAllObserver(element)) {
         return true;
       }
+      if (element.supertype != null) queue.add(element.supertype!);
+      queue.addAll(element.interfaces);
+      queue.addAll(element.mixins);
+    }
+    return false;
+  }
+
+  bool _hasFlutterSupertypeNamed(DartType? type, String name) {
+    if (type is! InterfaceType) return false;
+    final visited = <InterfaceElement>{};
+    final queue = <InterfaceType>[type];
+    while (queue.isNotEmpty) {
+      final current = queue.removeLast();
+      final element = current.element;
+      if (!visited.add(element)) continue;
+      if (element.name == name && _isFromFlutter(element)) return true;
       if (element.supertype != null) queue.add(element.supertype!);
       queue.addAll(element.interfaces);
       queue.addAll(element.mixins);
@@ -151,6 +181,17 @@ class AllObserverTypeChecker {
     final element = node.constructorName.type.element;
     return element is ClassElement &&
         _observerWidgetClassNames.contains(element.name) &&
+        _isFromAllObserver(element);
+  }
+
+  bool isObserverWithChildCreation(InstanceCreationExpression node) =>
+      isObserverWidgetCreation(node) &&
+      node.constructorName.name?.name == 'withChild';
+
+  bool isObservableHistoryCreation(InstanceCreationExpression node) {
+    final element = node.constructorName.type.element;
+    return element is ClassElement &&
+        _historyClassNames.contains(element.name) &&
         _isFromAllObserver(element);
   }
 
@@ -228,6 +269,18 @@ class AllObserverTypeChecker {
     return false;
   }
 
+  bool isWithHistoryInvocation(MethodInvocation node) =>
+      node.methodName.name == _withHistoryMethodName &&
+      _isFromAllObserver(_invokedElement(node));
+
+  bool isPeekInvocation(MethodInvocation node) =>
+      node.methodName.name == _peekMethodName &&
+      _isFromAllObserver(_invokedElement(node));
+
+  bool isUntrackedInvocation(MethodInvocation node) =>
+      node.methodName.name == _untrackedFunctionName &&
+      _isFromAllObserver(_invokedElement(node));
+
   /// Whether [node] is an effect or worker creation, for expression
   /// statements like `effect(...)`, `ever(...)`, `once(...)`,
   /// `debounce(...)`, `interval(...)`.
@@ -256,4 +309,47 @@ class AllObserverTypeChecker {
   /// Whether [type] is (or extends) `ObservableList`/`CoreObservableList`.
   bool isObservableListType(DartType? type) =>
       _hasReactiveSupertypeNamed(type, _observableListClassNames);
+
+  bool isObservableMapType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _observableMapClassNames);
+
+  bool isObservableSetType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _observableSetClassNames);
+
+  bool isReactiveValueType(DartType? type) =>
+      isObservableType(type) ||
+      isComputedType(type) ||
+      isObservableListType(type) ||
+      isObservableMapType(type) ||
+      isObservableSetType(type);
+
+  bool isFlutterWidgetType(DartType? type) =>
+      _hasFlutterSupertypeNamed(type, 'Widget');
+
+  /// Whether [type] is the public `Disposer` callback typedef.
+  bool isDisposerType(DartType? type) {
+    final alias = type?.alias?.element;
+    return alias?.name == _disposerTypeAliasName && _isFromAllObserver(alias);
+  }
+
+  bool isWorkerType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _workerClassNames);
+
+  bool isWorkersType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _workersClassNames);
+
+  bool isObservableHistoryType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _historyClassNames);
+
+  bool isObservableSubscriptionType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _subscriptionClassNames);
+
+  bool isReactiveScopeType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _reactiveScopeClassNames);
+
+  bool isObservableFutureType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _observableFutureClassNames);
+
+  bool isObservableStreamType(DartType? type) =>
+      _hasReactiveSupertypeNamed(type, _observableStreamClassNames);
 }
