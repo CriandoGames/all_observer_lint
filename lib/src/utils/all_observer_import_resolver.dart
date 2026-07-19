@@ -197,7 +197,9 @@ class AllObserverImportResolver {
   String _uniquePrefix(CompilationUnit unit) {
     final collector = _IdentifierCollector();
     unit.accept(collector);
-    if (!collector.names.contains(_defaultPrefixBase)) return _defaultPrefixBase;
+    if (!collector.names.contains(_defaultPrefixBase)) {
+      return _defaultPrefixBase;
+    }
 
     var suffix = 2;
     while (collector.names.contains('$_defaultPrefixBase$suffix')) {

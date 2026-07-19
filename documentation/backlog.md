@@ -141,10 +141,17 @@ deliberately narrow scope of that. Still open from that review:
   Observer` still stays unavailable rather than guessing at a safe partial
   wrap. (Deliberate: see the "Mixed watch + .value" design note near the
   assist's own tests/docs — not a bug, a documented deferral.)
-- **`fake_runtime_contract_test.dart`.** No dedicated test yet asserts that
-  `fake_all_observer`'s public surface stays in sync with the real
-  package's; today that sync is manual (verified once, for 0.5.1, directly
-  against the pinned commit) rather than continuously checked.
+- **Resolved:** `test/runtime_contract/fake_runtime_contract_test.dart` now
+  asserts, via a lightweight source-text check that needs no network access,
+  that `fake_all_observer` still declares the exact signatures verified
+  against the real package for 0.5.1 (`debounce`/`interval`'s required
+  `time:`, `ObservableList`/`Map`/`Set`'s `dart:collection` base classes,
+  the `Disposer` alias and `effect()`'s return type, `Observer`/
+  `Observer.withChild`, `assign`/`assignAll`). It is deliberately narrow —
+  a string check, not full semantic re-verification — so it catches an
+  accidental revert of one of these signatures, not every possible drift;
+  `test/fixtures/real_runtime_smoke` remains the actual proof against the
+  live package.
 - **`all_observer_lint.dart`/format check scope.** The CI formatting check
   only covers `lib/`, not `test/`; the many hand-authored test fixtures in
   this repo have not been verified against `dart format` line-for-line

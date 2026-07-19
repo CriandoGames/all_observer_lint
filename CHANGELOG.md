@@ -83,6 +83,14 @@ review of 0.5.0 (see `documentation/backlog.md`):
   directly in `dispose()`. Deliberately narrow: a helper that takes a
   parameter, lives outside the class, or is reached only through a
   tear-off is not followed, so the field is still flagged in those cases.
+- Added `test/runtime_contract/fake_runtime_contract_test.dart`: a
+  network-free check that `fake_all_observer` still declares the exact
+  signatures verified against the real package for this release
+  (`debounce`/`interval`'s required `time:`, the collections'
+  `dart:collection` base classes, `Disposer`/`effect()`, `Observer`/
+  `Observer.withChild`, `assign`/`assignAll`), so an accidental future
+  revert of the fake's shape is caught immediately instead of only at the
+  next manual audit.
 
 ## 0.5.0
 
