@@ -256,9 +256,7 @@ class AllObserverImportResolver {
     var shown = true;
     for (final combinator in directive.combinators) {
       if (combinator is ShowCombinator) {
-        shown = combinator.shownNames.any(
-          (name) => name.name == _observerName,
-        );
+        shown = combinator.shownNames.any((name) => name.name == _observerName);
       } else if (combinator is HideCombinator &&
           combinator.hiddenNames.any((name) => name.name == _observerName)) {
         shown = false;
