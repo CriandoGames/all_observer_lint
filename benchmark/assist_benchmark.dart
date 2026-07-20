@@ -47,6 +47,7 @@ Future<void> _runFor(int widgetCount) async {
       body: () async {
         final offset = offsets[cursor % offsets.length];
         cursor++;
+        // ignore: invalid_use_of_visible_for_testing_member
         await assist.testRun(result, SourceRange(offset, 0));
       },
       warmup: 3,

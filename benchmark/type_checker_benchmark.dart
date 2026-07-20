@@ -10,7 +10,6 @@
 // cheaper than the first, and repeated checker construction (one per
 // execution, never shared/static) should stay cheap since each execution's
 // cache starts cold and small.
-import 'dart:io';
 
 import 'package:all_observer_lint/src/utils/all_observer_type_checker.dart';
 import 'package:analyzer/dart/ast/ast.dart';
