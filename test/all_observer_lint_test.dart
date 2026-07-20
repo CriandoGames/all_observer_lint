@@ -1,4 +1,6 @@
 import 'package:all_observer_lint/all_observer_lint.dart';
+import 'package:all_observer_lint/src/assists/convert_change_notifier_field_assist.dart';
+import 'package:all_observer_lint/src/assists/convert_value_notifier_assist.dart';
 import 'package:all_observer_lint/src/assists/extract_to_computed_assist.dart';
 import 'package:all_observer_lint/src/assists/wrap_smallest_reactive_subtree_assist.dart';
 import 'package:all_observer_lint/src/assists/wrap_with_observer_assist.dart';
@@ -16,14 +18,16 @@ void main() {
   });
 
   test('plugin registers every assist', () {
-    expect(createPlugin().getAssists(), hasLength(3));
+    expect(createPlugin().getAssists(), hasLength(5));
   });
 
-  test('plugin registers the permissive, specialized, and extract-to-'
-      'Computed wrap-with-Observer assists', () {
+  test('plugin registers the permissive, specialized, extract-to-Computed, '
+      'convert-ValueNotifier, and convert-ChangeNotifier-field assists', () {
     final assists = createPlugin().getAssists();
     expect(assists, contains(isA<WrapWithObserverAssist>()));
     expect(assists, contains(isA<WrapSmallestReactiveSubtreeAssist>()));
     expect(assists, contains(isA<ExtractReactiveExpressionToComputedAssist>()));
+    expect(assists, contains(isA<ConvertValueNotifierAssist>()));
+    expect(assists, contains(isA<ConvertChangeNotifierFieldAssist>()));
   });
 }

@@ -221,6 +221,102 @@ Computed).**
 - No rule or quick fix ships with this — assist-only — and no preset
   changed.
 
+**Assisted-migrations phase, Etapa E (convert `ValueNotifier` to
+`Observable`).**
+
+- New `lib/src/migrations/value_notifier_migration_analyzer.dart`
+  (`ValueNotifierMigrationAnalyzer`) and `lib/src/assists/
+  convert_value_notifier_assist.dart` (`ConvertValueNotifierAssist`) — the
+  first migration to use the analyzer/assist split the brief itself
+  suggested (Etapas C/D were simple enough not to need it), and the first
+  to consume `MigrationSafetyResult` (built in Etapa A).
+- Converts a **private** field/top-level `final ValueNotifier<T> x =
+  ValueNotifier(v);` (or an inferred-type equivalent) to `Observable<T>`/
+  `Observable`, rewrites every `.dispose()` call on it to `.close()`, and
+  leaves `.value` reads/writes and any `addListener`/`removeListener` call
+  completely untouched.
+- **Listener calls need no rewrite at all** — confirmed, not assumed, by
+  reading the real `all_observer` source directly:
+  `Observable<T> implements ValueListenable<T>`, and its
+  `addListener`/`removeListener` delegate to a plain listener registry
+  exactly like Flutter's own `ValueNotifier`, never invoking the callback
+  immediately. This makes leaving those calls untouched the fully
+  behavior-preserving choice, not a shortcut. See
+  `documentation/architecture.md`.
+- Stays silent unless: the initializer is a *direct* `ValueNotifier(...)`
+  construction; every other occurrence of the field is a `.value`
+  read/write, a `.dispose()` call, or an `addListener`/`removeListener`
+  call directly on it (this single check covers both a
+  `ValueListenableBuilder`-style consumer and "an unknown API" from the
+  brief's list, without special-casing either); and any
+  `addListener`/`removeListener` usage is a single balanced pair. See
+  `documentation/backlog.md` for what remains deferred (local-variable
+  declarations, an explanatory diagnostic for unavailability, batch
+  conversion) and a staging note on Parts 3/4 of the brief, which are not
+  assigned to any lettered Etapa.
+- No rule or quick fix ships with this — assist-only — and no preset
+  changed.
+
+**Assisted-migrations phase, Etapa F (convert a `ChangeNotifier` field to
+`Observable` — first of four smaller Part 1 assists).**
+
+- New `lib/src/migrations/change_notifier_migration_analyzer.dart`
+  (`ChangeNotifierFieldMigrationAnalyzer`) and `lib/src/assists/
+  convert_change_notifier_field_assist.dart`
+  (`ConvertChangeNotifierFieldAssist`). The brief's own Part 1 explicitly
+  asks for smaller, independent assists instead of one whole-class
+  transform in the first version; only step 1 of its four
+  (field+getter → `Observable`) is implemented here.
+- Converts a **private** field + its matching, pure-passthrough getter
+  (`int _count = 0; int get count => _count;`) on a class that **directly**
+  extends Flutter's real `ChangeNotifier` into a single public
+  `final count = Observable(0);` field, rewriting every occurrence of
+  either the field or the getter to `.value` access. Every
+  `notifyListeners()` call is left completely untouched, even when it
+  becomes redundant for the field just converted — removing it safely is a
+  separate, deferred step (2 of 4).
+- Stays silent unless the enclosing class: is itself private; extends
+  `ChangeNotifier` directly (not transitively); has no `with`/`implements`
+  clause; does not override `addListener`/`removeListener`/`hasListeners`/
+  `notifyListeners`; never tears off `notifyListeners` as a callback; never
+  returns `this` as a `Listenable`-shaped value; and never passes `this`
+  as an argument anywhere in its own body — all explicit blocking cases
+  from the brief. The field itself must also have exactly one matching
+  getter, no conflicting member, no occurrence of either symbol reaching
+  outside the class, and no constructor-initializer-list assignment.
+- Fixes a subtle correctness trap along the way: Dart's bare `$identifier`
+  string-interpolation shorthand only ever captures a single identifier —
+  naively replacing just the identifier's token range inside one would
+  silently turn `'$score'` into `'$score.value'` (a literal `.value`
+  suffix, never evaluated). The assist detects this shape and rewrites the
+  whole interpolation node with explicit braces instead
+  (`'${score.value}'`).
+- **Bug fix (found by the full regression run, Etapa F checkpoint):**
+  `UnitSemanticIndex.references` (`lib/src/utils/
+  semantic_reference_index.dart`) silently missed a tracked field's
+  occurrence whenever it was the direct target of a plain assignment or a
+  compound assignment/increment/decrement (`_count = v`, `_count += v`,
+  `_count++`) — analyzer does not populate a bare identifier's own
+  `.element` in that shape; the resolution lives on the enclosing
+  `AssignmentExpression`/`PostfixExpression`/`PrefixExpression`'s
+  `writeElement`/`readElement` instead (all three implement
+  `CompoundAssignmentExpression`). Every earlier tracked declaration
+  (`Observable`/`Computed`/the reactive collections/`ValueNotifier`) is
+  always accessed through `.value`/a method call, so this never surfaced
+  before — `ChangeNotifier`'s plain field is the first tracked declaration
+  ever written to directly. Left unfixed, `ConvertChangeNotifierFieldAssist`
+  would rename the field's declaration while silently leaving a direct
+  `_count++;` write untouched, producing code that no longer compiles.
+  `_ReferenceCollector.visitSimpleIdentifier` now checks the enclosing
+  compound-assignment expression's `writeElement`/`readElement` as a
+  fallback whenever the identifier's own `.element` is null.
+- See `documentation/backlog.md` for what remains deferred (removing a
+  redundant `notifyListeners()`, removing `extends ChangeNotifier`,
+  same-file public-class support, constructor-initializer-list fields,
+  batch conversion).
+- No rule or quick fix ships with this — assist-only — and no preset
+  changed.
+
 ## 0.5.1
 
 Stabilization patch, addressing the P0/P1 findings from the pre-publication

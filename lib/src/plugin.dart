@@ -1,5 +1,7 @@
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 
+import 'assists/convert_change_notifier_field_assist.dart';
+import 'assists/convert_value_notifier_assist.dart';
 import 'assists/extract_to_computed_assist.dart';
 import 'assists/wrap_smallest_reactive_subtree_assist.dart';
 import 'assists/wrap_with_observer_assist.dart';
@@ -36,6 +38,8 @@ class AllObserverLintPlugin extends PluginBase {
     WrapWithObserverAssist(),
     WrapSmallestReactiveSubtreeAssist(),
     ExtractReactiveExpressionToComputedAssist(),
+    ConvertValueNotifierAssist(),
+    ConvertChangeNotifierFieldAssist(),
   ];
 
   @override

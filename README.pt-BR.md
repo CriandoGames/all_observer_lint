@@ -174,6 +174,35 @@ genérico de fallback (`computedValue`, `computedValue2`, ...) em vez de
 tentar adivinhar um a partir da expressão. Veja
 `documentation/architecture.md` para a lista completa de critérios.
 
+Selecionar uma declaração privada de campo/top-level `ValueNotifier<T>`
+oferece **Convert ValueNotifier to Observable**: reescreve o tipo/
+construtor para `Observable`, reescreve qualquer chamada `.dispose()` para
+`.close()`, e deixa leituras/escritas `.value` e qualquer chamada
+`addListener`/`removeListener` completamente intocadas —
+`Observable.addListener`/`removeListener` são equivalentes diretos,
+confirmados na fonte real, que nunca invocam o callback imediatamente,
+então nenhuma reescrita de listener é necessária. Fica indisponível para
+um campo público, um `ValueNotifier` construído indiretamente, um campo
+passado como argumento em qualquer lugar (cobre consumidores no estilo
+`ValueListenableBuilder`), ou uso desbalanceado de
+`addListener`/`removeListener`.
+
+Selecionar um campo privado com um getter correspondente, de passthrough
+puro (`int _count = 0; int get count => _count;`) numa classe que estende
+diretamente o `ChangeNotifier` do Flutter oferece **Convert ChangeNotifier
+field to Observable**: junta o campo e o getter em um único campo
+`final count = Observable(0);` e reescreve toda ocorrência de qualquer um
+dos dois para acesso `.value`, deixando as chamadas `notifyListeners()` e o
+`extends ChangeNotifier` completamente intocados — são etapas separadas e
+adiadas da mesma migração (veja `documentation/backlog.md`). Fica
+indisponível a menos que a classe seja privada, estenda `ChangeNotifier`
+diretamente (sem mixin/implements, sem sobrescrever
+`addListener`/`removeListener`/`hasListeners`/`notifyListeners`, sem
+"tear-off" de `notifyListeners`, sem expor `this` como `Listenable`, sem
+passar `this` como argumento em qualquer lugar da classe), e o campo tenha
+exatamente um getter correspondente sem nenhuma ocorrência de nenhum dos
+dois símbolos alcançando fora da classe.
+
 ## Presets
 
 | Preset | Quando usar |

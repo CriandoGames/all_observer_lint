@@ -489,6 +489,216 @@ assists in the remaining stages, all of which will need to reference other
 No rule or quick fix ships with this — assist only, per the phase's
 diagnostic/transformation separation — and no preset changed.
 
+## Assisted migrations — Etapa E: convert ValueNotifier to Observable
+
+`lib/src/migrations/value_notifier_migration_analyzer.dart`
+(`ValueNotifierMigrationAnalyzer`) and `lib/src/assists/
+convert_value_notifier_assist.dart` (`ConvertValueNotifierAssist`)
+implement the project brief's Part 2. This is the first migration to
+follow the brief's own suggested split between an analyzer (pure
+evaluation, producing a `MigrationSafetyResult`) and an assist (consumes
+it, assembles edits) — Etapas C/D were simple enough not to need it.
+
+**Why listener calls need no rewrite at all.** The brief assumes
+`count.addListener(callback)` may need converting to an `effect`/`ever`
+worker "só quando a semântica for equivalente". Checking the real,
+published `all_observer` source directly (`lib/src/observable/
+observable.dart`, `lib/src/core/core_observable.dart`) shows
+`Observable<T> implements ValueListenable<T>`, and its `addListener`/
+`removeListener` delegate straight to a plain listener registry — just
+like Flutter's own `ValueNotifier`/`ChangeNotifier`: registration never
+invokes the callback immediately, only a future value change does. Since
+the semantics are already identical, this migration leaves every
+`addListener`/`removeListener` call completely untouched — that **is**
+the fully behavior-preserving choice here, not a shortcut. (A generic
+listener-to-`effect`/`ever` conversion, Part 4 of the brief, remains a
+useful, separate modernization someone could still want — it is simply
+not *required* by this specific migration, and is not scheduled to its
+own Etapa; see `documentation/backlog.md`.)
+
+**Safety gates** (`ValueNotifierMigrationAnalyzer.evaluate`), all silent
+on failure:
+
+- the declaration must be a **private** field or top-level variable — only
+  these are indexed by `UnitSemanticIndex.declarations`, so a public field
+  is invisible to this migration entirely (a local variable is deferred
+  too; see `documentation/backlog.md`);
+- the initializer must be a direct `ValueNotifier(...)`/
+  `ValueNotifier<T>(...)` construction — anything reached indirectly (a
+  factory, a helper function, a cast) is not resolved;
+- every occurrence of the field outside its own declaration (from
+  `UnitSemanticIndex.references`) must classify as exactly one of: a
+  `.value` read/write, a `.dispose()` call, or an `addListener`/
+  `removeListener` call directly on the field. Anything else — passed as
+  an argument (this one check alone covers both a `ValueListenableBuilder`-
+  style consumer and "an unknown API", per the brief's own list, without
+  needing to special-case either), assigned elsewhere, used as a bare
+  `ValueListenable`/`Listenable` — is unrecognized and blocks the whole
+  candidate;
+- `addListener`/`removeListener` usage, if present at all, must be a
+  single balanced pair — reusing `UnitSemanticIndex.listenerRegistrations`/
+  `listenerRemovals`, which already only resolve a simple,
+  directly-`Listenable`-typed, directly-referenced target (see that
+  class's own doc).
+
+**Edits.** Only three things are ever rewritten: the constructor call's
+type name (`ValueNotifier` → `Observable`, done via the `NamedType.name`
+token's own range so any generic type argument/nullability is preserved
+byte-for-byte), the explicit declared type's name if one exists (same
+technique — an inferred declaration, `final _flag = ValueNotifier(...)`,
+is left inferred, matching the brief's "quando inferência for segura"
+without needing to independently judge inference safety: whatever
+explicitness the original code already chose is preserved), and each
+`.dispose()` call's method name (`dispose` → `close`). `.value` and any
+`addListener`/`removeListener` call are left byte-for-byte as written.
+Reuses `AllObserverSymbolImportResolver` (Etapa D) for a safe `Observable`
+reference — the file commonly has no `all_observer` import at all yet,
+since `ValueNotifier` is pure Flutter.
+
+No rule or quick fix ships with this — assist-only — and no preset
+changed. The brief's "diagnosticar que existem consumidores
+incompatíveis" (a companion diagnostic explaining *why* the assist is
+unavailable) is deferred; every other assist in this package also stays
+silently unavailable without one, so this is consistent with existing
+precedent, not a new gap — see `documentation/backlog.md`.
+
+## Assisted migrations — Etapa F: convert a ChangeNotifier field to Observable
+
+`lib/src/migrations/change_notifier_migration_analyzer.dart`
+(`ChangeNotifierFieldMigrationAnalyzer`) and `lib/src/assists/
+convert_change_notifier_field_assist.dart`
+(`ConvertChangeNotifierFieldAssist`) implement the *first* of the project
+brief's four smaller Part 1 assists ("não transformar automaticamente a
+classe inteira inicialmente"):
+
+1. convert one private field + its getter to `Observable<T>` — this stage;
+2. remove a redundant `notifyListeners()` call once every change in that
+   method already notifies through `Observable` — deferred;
+3. remove `extends ChangeNotifier` once nothing depends on it anymore —
+   deferred;
+4. add the `all_observer` import — folded into (1) via
+   `AllObserverSymbolImportResolver`, same as Etapa D/E.
+
+Every `notifyListeners()` call is left completely untouched by this stage,
+even the ones that become redundant for the one field just converted —
+proving a call is *safe to remove* needs whole-method reasoning ("every
+change in this method already notifies via `Observable`") that is
+deliberately out of scope here. Likewise `extends ChangeNotifier` stays in
+the class; removing it needs proof that nothing still depends on the
+class being a real `Listenable` (see below), which is its own, separate,
+harder assist.
+
+**Class-level gates** (`_classBlockReason`, checked once per candidate
+field, all silent on failure) — the project brief's blocking list for
+Part 1 is split here into what actually matters for *this specific*
+field-level assist (the class keeps `extends ChangeNotifier` throughout,
+so nothing about external `Listenable` consumers is broken by converting
+one field) versus what is deferred to the future "remove the superclass"
+assist. Even so, every one of the brief's class-shape conditions is
+checked upfront, once, and shared by every future ChangeNotifier assist
+added to this same file:
+
+- the class itself must be **private** — proving "todas as referências
+  necessárias estão no mesmo arquivo" for a *public* class would require
+  seeing every other file in the package, which a single-file
+  `custom_lint` pass cannot do; privacy is the one case this analyzer can
+  actually prove;
+- it must extend Flutter's real `ChangeNotifier` **directly** — checked on
+  the class's own `extends` clause's resolved element, never via a
+  transitive hierarchy walk, so a class extending some *other* class that
+  itself extends `ChangeNotifier` further up is left alone;
+- no `with` clause and no `implements` clause at all (a conservative
+  reading of "não possui outra superclass relevante");
+- no override of `addListener`, `removeListener`, `hasListeners`, or
+  `notifyListeners`;
+- `notifyListeners` is never torn off — every reference to it must be the
+  direct target of a call; passing it as a bare callback
+  (`api.addListener(notifyListeners)`) blocks the whole class, per the
+  brief's explicit example;
+- no getter/method returns `this` typed as `Listenable`-shaped
+  (`Listenable get listenable => this;`), also per the brief's explicit
+  example;
+- `this` is never passed as an argument anywhere in the class's own body
+  (covers `AnimatedBuilder(animation: this)`-style exposure written from
+  inside one of its own methods — an *external* file passing some other
+  variable of this type to `AnimatedBuilder` is the "used as Listenable"
+  concern the future superclass-removal assist will need to prove instead,
+  since converting one field never changes whether the class is still a
+  `Listenable`).
+
+**Field-level gates** (`_evaluateField`):
+
+- private, non-static, non-`late` instance field with an initializer,
+  whose declared type is not itself reactive or `Listenable`-shaped
+  already (nothing to convert);
+- exactly one getter named after the field (leading `_` stripped) exists,
+  whose body is a pure passthrough (`=> _field;` or `{ return _field; }`)
+  — no setter, method, or field sharing that derived public name;
+- every occurrence of *both* the field's element and the getter's element
+  anywhere in the compilation unit (a dedicated whole-unit
+  `SimpleIdentifier` scan — `UnitSemanticIndex` only tracks *variable*
+  declarations, never method/getter elements, so the getter's own
+  occurrences need this separate pass) must fall inside the enclosing
+  class's own source range. An occurrence reaching outside — another
+  class in the same file reading the getter, say — stays silent rather
+  than attempting a same-file, cross-class rewrite;
+- the field must never be assigned through a constructor initializer list
+  (`: _field = value`) — `Observable`'s `.value` setter cannot be the
+  target of one, so this shape is left alone completely.
+
+**Edits.** The field declaration and its getter are replaced as a unit:
+`int _count = 0; int get count => _count;` becomes `final count =
+Observable(0);`, and every occurrence of either symbol (bare `_count`
+inside the class, or `count` reached through the getter) is rewritten to
+`count.value`. The explicit `<T>` type argument on `Observable` is only
+kept when relying on plain inference from the initializer would actually
+narrow the type — e.g. `num _score = 0;` infers `Observable<int>` from
+`0` alone, silently narrowing a field that used to accept `double` too, so
+the explicit `<num>` is preserved there; when the declared and inferred
+types already match (or there was no explicit annotation to begin with),
+the bare inferred form is used, matching the brief's own example
+(`final count = Observable(0);`, no generic). Reuses
+`AllObserverSymbolImportResolver` (Etapa D/E) for a safe `Observable`
+reference.
+
+**A subtle correctness fix worth calling out**: Dart's bare `$identifier`
+string-interpolation shorthand only ever captures a single identifier —
+`'$score.value'` means `'${score}' '.value'`, with `.value` as *literal*
+trailing text, not a property access. Naively replacing just the
+identifier's own token range inside such a shorthand (`'$score'` →
+`'$score.value'`) would silently print a literal `.value` suffix instead
+of evaluating it. `_valueAccessEdit` detects this exact shape
+(`InterpolationExpression` with `rightBracket == null`) and replaces the
+*whole* interpolation node instead, adding explicit braces
+(`'${score.value}'`) so the access is actually evaluated.
+
+**A second, more structural fix found by the same regression run:**
+`UnitSemanticIndex.references` (`lib/src/utils/semantic_reference_index.dart`)
+was silently missing any occurrence where the tracked identifier is the
+direct target of a plain assignment or a compound assignment/increment/
+decrement (`_count = v`, `_count += v`, `_count++`). Analyzer does not
+populate a bare identifier's own `.element` in that shape — the
+resolution lives on the enclosing `AssignmentExpression`/
+`PostfixExpression`/`PrefixExpression`'s `writeElement`/`readElement`
+instead (all three implement `CompoundAssignmentExpression`). Every
+tracked declaration before Etapa F (`Observable`/`Computed`/the reactive
+collections/`ValueNotifier`) is always accessed through `.value`/a method
+call, so the *tracked element itself* was never directly a compound-
+assignment target before now — a `ChangeNotifier`'s plain field is.
+Unfixed, the assist would rename the field's declaration while leaving a
+direct `_count++;` write completely untouched, producing code that no
+longer compiles — caught by the fixture's own `_CounterController` test,
+not by manual review. `_ReferenceCollector.visitSimpleIdentifier` now
+falls back to the enclosing compound-assignment expression's
+`writeElement`/`readElement` whenever the identifier's own `.element` is
+null. This is shared, non-migration-specific infrastructure, so it also
+benefits the upcoming `AsyncState` migration (Etapa G), which tracks
+plain boolean flag fields written the same direct way.
+
+No rule or quick fix ships with this — assist-only, same
+diagnostic/transformation separation as every prior stage — and no preset
+changed.
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and

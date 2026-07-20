@@ -343,8 +343,86 @@ Still deferred:
     same trade-off already made for `WrapSmallestReactiveSubtreeAssist`'s
     duplicated root-check above. The remaining stages (E–H) should reuse
     this new resolver rather than hand-roll another one.
-- `setState`, `ValueNotifier`, `ChangeNotifier`, listener, Future, Stream, and
-  complete `AsyncState` migrations;
+- **Resolved (Etapa E):** `ValueNotifier` → `Observable` conversion, via
+  `ValueNotifierMigrationAnalyzer` (`lib/src/migrations/
+  value_notifier_migration_analyzer.dart`) and `ConvertValueNotifierAssist`
+  (`lib/src/assists/convert_value_notifier_assist.dart`). Still out of
+  scope for this first version:
+  - only a **private** field/top-level declaration is converted — a local
+    `ValueNotifier` variable is not (`UnitSemanticIndex.declarations` only
+    indexes private fields/top-level variables in the first place; a local
+    would need its own, separate reference-collection pass);
+  - the brief's "diagnosticar que existem consumidores incompatíveis"
+    (an explanatory diagnostic for *why* the assist stayed unavailable) is
+    not implemented — matches how every other assist in this package
+    already behaves (silently unavailable, no companion diagnostic), so
+    this is consistent with existing precedent rather than a new gap, but
+    is worth revisiting if user feedback says otherwise;
+  - listener calls are recognized and left untouched, never converted to
+    `effect`/`ever` — confirmed correct (not just simpler) by reading the
+    real `all_observer` source: `Observable.addListener`/`removeListener`
+    are drop-in equivalents of Flutter's own, never invoking the callback
+    immediately. The brief's general listener-to-`effect`/`ever`
+    conversion (Part 4) remains a *separate*, optional modernization that
+    is not scheduled to any lettered Etapa yet — see the note on Parts 3/4
+    below;
+  - multiple `ValueNotifier` fields converted together, or a
+    whole-class/whole-file batch conversion, is not offered — one field at
+    a time, one assist invocation at a time.
+- **Resolved (Etapa F, first of four smaller Part 1 assists):** a single
+  private `ChangeNotifier`-subclass field + its getter → `Observable<T>`
+  conversion, via `ChangeNotifierFieldMigrationAnalyzer`
+  (`lib/src/migrations/change_notifier_migration_analyzer.dart`) and
+  `ConvertChangeNotifierFieldAssist` (`lib/src/assists/
+  convert_change_notifier_field_assist.dart`). The brief's own Part 1 text
+  explicitly asks for smaller assists instead of one whole-class transform
+  in the first version, listing four independent steps; only the first is
+  implemented so far. Still out of scope:
+  - **removing a redundant `notifyListeners()` call** (the brief's step 2)
+    — every `notifyListeners()` call is left untouched even when it becomes
+    redundant for the field just converted. Proving removal is safe needs
+    whole-method reasoning ("every reactive write in this method already
+    notifies through `Observable`") plus the brief's own explicit blocking
+    cases (a *conditional* `notifyListeners()`, or one called *before* the
+    field write instead of after — ordering matters) that this stage does
+    not attempt at all;
+  - **removing `extends ChangeNotifier`** (the brief's step 3) — needs
+    proof that nothing in the file still depends on the class being a real
+    `Listenable` (no remaining plain-field write needing manual
+    notification, no external code relying on `is ChangeNotifier`/
+    `Listenable` typing). This is a materially harder, class-wide check
+    than anything Etapa F's field-level gates need, so it is deferred to
+    its own future assist rather than attempted here;
+  - only a **private** field of a **private**, **directly**-`ChangeNotifier`-
+    extending class is considered — a class the brief would allow via
+    "todas as referências necessárias estão no mesmo arquivo" (a *public*
+    class whose getter is only ever used from the same file) is not
+    supported, because proving that from a single-file `custom_lint` pass
+    is not currently possible; only structural privacy is provable here;
+  - a field assigned through a constructor initializer list (`: _field =
+    value`) is left alone — `Observable`'s `.value` setter cannot be a
+    constructor-initializer-list target, so there is no direct rewrite for
+    that shape;
+  - multiple fields converted together, or a whole-class batch conversion,
+    is not offered, mirroring Etapa E's same scope limit.
+- **Staging note:** the brief's own Part 13 ("Plano de implementação em
+  etapas") schedules Etapas A–H to Parts: infra, 6+7, 8, 9, 2, 1, 5, 10 —
+  it never assigns a lettered Etapa to Part 3 (`redundant_observable_state`
+  — converting a redundant `Observable` back to a plain value) or the
+  *generic* form of Part 4 (converting any `Listenable`/`Observable`
+  listener to `effect`/`ever`, independent of a ValueNotifier/ChangeNotifier
+  migration). Etapa E's own "listeners simples" substep covers only the
+  narrow slice Part 4 needed for *this* migration (recognizing a listener
+  pair as simple enough to leave untouched — see above), not a
+  general-purpose conversion assist/rule. Both remain unscheduled; flag for
+  the person driving this phase to slot in explicitly (e.g. as an Etapa D.5
+  and I, or folded into the final report as deliberately deferred) rather
+  than silently skipping them.
+- `setState`, Future, Stream, and complete `AsyncState` migrations
+  (`ChangeNotifier` field conversion itself now has a first assist — see
+  "Resolved (Etapa F..." above; the `notifyListeners`-removal and
+  superclass-removal steps of that same migration remain open, also noted
+  there);
 - Observable-to-plain-value conversion and cross-file migrations;
 - **Resolved (Etapa B):** reactive-collection mutation detection (List/Map/
   Set) integrated into the existing purity rules, and a new

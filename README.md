@@ -173,6 +173,33 @@ generic fallback name (`computedValue`, `computedValue2`, ...) rather than
 guessing one from the expression. See `documentation/architecture.md` for
 the full list of gates.
 
+Selecting a private `ValueNotifier<T>` field/top-level declaration offers
+**Convert ValueNotifier to Observable**: it rewrites the type/constructor to
+`Observable`, rewrites any `.dispose()` call to `.close()`, and leaves
+`.value` reads/writes and any `addListener`/`removeListener` call
+completely untouched — `Observable.addListener`/`removeListener` are
+verified, real-source-confirmed drop-in equivalents that never invoke the
+callback immediately, so no listener rewrite is needed. Stays unavailable
+for a public field, an indirectly-constructed `ValueNotifier`, a field
+passed anywhere as an argument (covers `ValueListenableBuilder`-style
+consumers), or unbalanced `addListener`/`removeListener` usage.
+
+Selecting a private field with a matching, pure passthrough getter
+(`int _count = 0; int get count => _count;`) on a class that directly
+extends Flutter's `ChangeNotifier` offers **Convert ChangeNotifier field to
+Observable**: it merges the field and getter into a single
+`final count = Observable(0);` field and rewrites every occurrence of
+either to `.value` access, leaving `notifyListeners()` calls and
+`extends ChangeNotifier` completely untouched — those are separate,
+deferred steps of the same migration (see `documentation/backlog.md`).
+Stays unavailable unless the class is private, extends `ChangeNotifier`
+directly (no mixin/implements clause, no override of
+`addListener`/`removeListener`/`hasListeners`/`notifyListeners`, no
+tear-off of `notifyListeners`, no exposing `this` as a `Listenable`, no
+passing `this` as an argument anywhere in the class), and the field has
+exactly one matching getter with no occurrence of either symbol reaching
+outside the class.
+
 ## Presets
 
 | Preset | Use when |

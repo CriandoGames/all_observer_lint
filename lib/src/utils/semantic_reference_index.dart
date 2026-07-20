@@ -201,7 +201,7 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
-    final element = _canonicalElement(node.element);
+    final element = _canonicalElement(_resolveWriteAwareElement(node));
     if (element != null && declarationRanges.containsKey(element)) {
       final range = declarationRanges[element]!;
       final isInsideOwnDeclaration =
@@ -210,6 +210,42 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
     }
     super.visitSimpleIdentifier(node);
   }
+}
+
+/// Resolves the element [node] refers to, additionally handling the shape
+/// where [node] is the target of a plain assignment or the operand of a
+/// compound assignment/increment/decrement (`x = v`, `x += v`, `x++`,
+/// `--x`). In those shapes `node.element` is not populated on the
+/// identifier itself — analyzer instead exposes the resolution as
+/// `writeElement`/`readElement` on the enclosing `AssignmentExpression`/
+/// `PostfixExpression`/`PrefixExpression` (all implement
+/// `CompoundAssignmentExpression`).
+///
+/// This matters here in a way it never did for any earlier consumer of
+/// this index: every previous tracked declaration
+/// (`Observable`/`Computed`/the reactive collections/`ValueNotifier`) is
+/// always accessed through `.value`/a method call, so the *tracked*
+/// element itself was never directly the target of `++`/`+=`/`=` — only a
+/// `ChangeNotifier`'s plain field (Etapa F) is, and a plain async-flag
+/// field (the upcoming `AsyncState` migration) will be too. Without this,
+/// a direct write like `_count++;` would silently be invisible to
+/// [UnitSemanticIndex.references] — not just missed as "one more
+/// occurrence to check", but *never rewritten* by a migration assist that
+/// renames the declaration, producing code that no longer compiles.
+Element? _resolveWriteAwareElement(SimpleIdentifier node) {
+  final direct = node.element;
+  if (direct != null) return direct;
+  final parent = node.parent;
+  if (parent is AssignmentExpression && identical(parent.leftHandSide, node)) {
+    return parent.writeElement ?? parent.readElement;
+  }
+  if (parent is PostfixExpression && identical(parent.operand, node)) {
+    return parent.writeElement ?? parent.readElement;
+  }
+  if (parent is PrefixExpression && identical(parent.operand, node)) {
+    return parent.writeElement ?? parent.readElement;
+  }
+  return null;
 }
 
 /// Whole-unit reactive read/mutation occurrence collector. Deliberately
