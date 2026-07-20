@@ -16,9 +16,7 @@ void main() {
           'introduce_reactive_scope_available.dart',
         );
         final source = File(result.path).readAsStringSync();
-        final offset = source.indexOf(
-          'class _TwoComputedWidgetState',
-        );
+        final offset = source.indexOf('class _TwoComputedWidgetState');
         final changes = await IntroduceReactiveScopeAssist().testRun(
           result,
           SourceRange(offset, 0),
@@ -31,14 +29,8 @@ void main() {
           transformed,
           contains('late final ReactiveScope _scope = ReactiveScope();'),
         );
-        expect(
-          transformed,
-          contains('late final Computed<int> total;'),
-        );
-        expect(
-          transformed,
-          contains('late final Computed<int> doubled;'),
-        );
+        expect(transformed, contains('late final Computed<int> total;'));
+        expect(transformed, contains('late final Computed<int> doubled;'));
         expect(
           transformed,
           contains(
@@ -58,9 +50,7 @@ void main() {
         // elsewhere) — scope the "old disposal call is gone" check to
         // just this transformed class's own body instead of the whole
         // file.
-        final classStart = transformed.indexOf(
-          'class _TwoComputedWidgetState',
-        );
+        final classStart = transformed.indexOf('class _TwoComputedWidgetState');
         final classEnd = transformed.indexOf(
           '\nclass ComputedAndEffectWidget',
           classStart,
@@ -90,7 +80,15 @@ void main() {
         contains('late final ReactiveScope _scope = ReactiveScope();'),
       );
       expect(transformed, contains('late final Computed<int> total;'));
-      expect(transformed, contains('late final Disposer disposeEffect;'));
+      // Not `Disposer` (the inferred alias) — see
+      // `IntroduceReactiveScopeAssist._typeTextFor`: that name is not
+      // exported from the real `all_observer` package, so an inferred
+      // (never explicitly annotated) `Disposer` field must be rewritten
+      // using the underlying structural function type instead.
+      expect(
+        transformed,
+        contains('late final void Function() disposeEffect;'),
+      );
       expect(transformed, contains('_scope.run(() {'));
       expect(transformed, contains('_scope.dispose();'));
       expect(transformed, isNot(contains('disposeEffect();')));

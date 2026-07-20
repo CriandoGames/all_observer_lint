@@ -47,7 +47,12 @@ class ComputedAndEffectWidget extends StatefulWidget {
 
 class _ComputedAndEffectWidgetState extends State<ComputedAndEffectWidget> {
   late final Computed<int> total = Computed(() => _a.value + _b.value);
-  late final Disposer disposeEffect = effect(() {
+  // No explicit type annotation on purpose: `Disposer` (this field's
+  // inferred type) is not exported from the real `all_observer` package's
+  // public surface, so the assist must rewrite this with the underlying
+  // structural type, not the alias name — see
+  // `IntroduceReactiveScopeAssist._typeTextFor`.
+  late final disposeEffect = effect(() {
     // ignore: avoid_print
     print(total.value);
   });

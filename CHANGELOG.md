@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.1
+
+Bug fix: `Introduce ReactiveScope` could rewrite an inferred (never
+explicitly annotated) `effect()`-backed `Disposer` field using `Disposer`
+as its new explicit type. That alias is not exported from the real
+`all_observer` package's public surface, so the generated field failed to
+resolve (`undefined_class`) against real code, even though it compiled
+fine against this package's own test fixture. The assist now uses the
+underlying structural type (`void Function()`) instead whenever no
+explicit type was already present. See `documentation/architecture.md`/
+`backlog.md` for the full root cause. No other rule/assist/preset
+changed.
+
 ## 0.6.0
 
 `Wrap with Observer` is now permissive (any Widget selection, not just
@@ -11,10 +24,9 @@ the two write-purity rules now also catch reactive-collection mutations.
 Five new assists — wrap smallest reactive subtree, extract to `Computed`,
 convert `ValueNotifier`/`ChangeNotifier` field to `Observable`, introduce
 `ReactiveScope` — all assist-only, no preset change; `AsyncState` deferred.
-Two regressions found and fixed along the way: a compound-
-assignment tracking gap and a missed `FunctionExpressionInvocation`-
-shaped disposal call. See `documentation/architecture.md`/`backlog.md`
-for full details.
+Two regressions found and fixed along the way: a compound-assignment
+tracking gap and a missed `FunctionExpressionInvocation`-shaped disposal
+call. See `documentation/architecture.md`/`backlog.md` for full details.
 
 ## 0.5.1
 

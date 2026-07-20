@@ -80,7 +80,20 @@ class SmokeController {
   late final stream = ObservableStream<int>(() => Stream.value(count.value));
 
   late final Worker _scopedWorker;
-  late final Disposer _scopedEffectDispose;
+  // `Disposer` (`effect()`'s inferred return type) is not exported from
+  // `package:all_observer/all_observer.dart`'s public surface — confirmed
+  // against the real package's `lib/all_observer.dart` barrel file, which
+  // never exports `lib/src/core/typedefs.dart`. `IntroduceReactiveScopeAssist`
+  // (`lib/src/assists/introduce_reactive_scope_assist.dart`) accounts for
+  // this and writes the underlying structural type instead; this
+  // hand-authored "after" fixture does the same.
+  late final void Function() _scopedEffectDispose;
+
+  // Read-only exposure so both fields above are provably used (not just
+  // assigned) — `_scope.dispose()` alone already tears both down; nothing
+  // here calls `_scopedEffectDispose()`/`_scopedWorker.dispose()` manually.
+  bool get scopedWorkerIsDisposed => _scopedWorker.isDisposed;
+  void Function() get scopedEffectDisposer => _scopedEffectDispose;
 
   int readWithoutTracking() => untracked(() => count.value);
 

@@ -262,6 +262,33 @@ phase touches. Two corrections against the phase's own illustrative brief:
   only against plain Flutter `ValueNotifier`/`ChangeNotifier` targets,
   which already exercise the same `isFlutterListenableType` code path.
 
+## `fake_all_observer` divergence found via `real_runtime_smoke` (Etapa H)
+
+`test/fixtures/fake_all_observer`'s `all_observer.dart` exports `Disposer`
+directly (`typedef Disposer = void Function();` at its top level). The
+real, published package defines the identical typedef in
+`lib/src/core/typedefs.dart`, but its public barrel file
+(`lib/all_observer.dart`) never exports that file — so `Disposer` is not
+actually a nameable symbol for a real consumer, only an internal type
+`effect()`'s return value happens to infer. This let
+`IntroduceReactiveScopeAssist` ship an assist that printed `Disposer` as
+an explicit type annotation for an inferred field, which compiles fine
+against the fake fixture but fails (`undefined_class`) against the real
+package — caught only by `test/fixtures/real_runtime_smoke`'s CI job, not
+by any fixture-based unit test. The assist itself is now fixed (see
+`documentation/architecture.md`, Etapa H). The fake package's own
+divergence is tracked here rather than fixed: making
+`fake_all_observer` also hide `Disposer` behind an unexported file would
+require touching every existing fixture that references `Disposer`
+explicitly (`dispose_reactive_resources_valid.dart`,
+`dispose_reactive_resources_invalid.dart`, `dispose_effect_fix_input.dart`),
+none of which are wrong today — an explicit `Disposer` annotation a
+consumer already wrote (and which already compiled, however that name
+became available to them) is always left untouched by every rule/assist
+in this package, so those fixtures remain valid, illustrative shapes for
+that scenario specifically. Revisit if a future rule/assist needs to
+generate a fresh, never-before-written `Disposer` reference.
+
 ## Future rules
 
 - `avoid_large_observer_scope` (performance; mentioned as an example in

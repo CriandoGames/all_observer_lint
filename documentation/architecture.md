@@ -839,6 +839,35 @@ were unaffected, since `disposeMethod`/`closeMethod` disposal (an explicit
 `.dispose()`/`.close()` call on a target) is always a `MethodInvocation`
 and never hits this code path.
 
+**Bug fix (found by `test/fixtures/real_runtime_smoke`, the CI job that
+analyzes against the real, published `all_observer` package): the
+rewritten field declaration must never print `Disposer` as an explicit
+type when that type was only ever inferred.** `Disposer` is `typedef
+Disposer = void Function();` in the real package's own
+`lib/src/core/typedefs.dart` — but the real package's public barrel file,
+`lib/all_observer.dart`, never exports that file (confirmed by reading it
+directly, not assumed). A field like `late final disposeEffect =
+effect(...);` (no explicit type written) has its static type inferred to
+`Disposer` internally, with no requirement that the name `Disposer` itself
+ever be in scope — until this assist's rewrite tried to print
+`DartType.getDisplayString()`'s alias name back as an explicit annotation
+(`late final Disposer disposeEffect;`), which fails to resolve
+(`undefined_class`) against the real package, even though the
+pre-migration source compiled fine. `test/fixtures/fake_all_observer`
+does not model this gap — its own `all_observer.dart` exports `Disposer`
+directly — so every fixture-based unit test in this repo stayed green
+throughout, and only the real-runtime smoke job caught it.
+`IntroduceReactiveScopeAssist._typeTextFor` now special-cases this: an
+*inferred* (never explicitly annotated) `Disposer`-typed field is
+rewritten using the alias's own underlying structural type,
+`void Function()`, instead of the alias name — this always compiles
+regardless of what the consumer's own import surface happens to expose.
+A field that already wrote `Disposer` explicitly in source is untouched,
+since by definition that name was already resolving in that file. Neither
+`Computed` nor `Worker` (this migration's other two auto-captured kinds)
+are affected, since both are real, exported, nameable classes in the
+actual package.
+
 No rule or quick fix ships with this — assist-only, same
 diagnostic/transformation separation as every prior stage — and no preset
 changed.

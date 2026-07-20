@@ -14,7 +14,7 @@ import '../utils/source_edit_plan.dart';
 /// ```dart
 /// class _DashboardState extends State<Dashboard> {
 ///   late final Computed<int> total = Computed(() => a.value + b.value);
-///   late final Disposer disposeEffect = effect(() => print(total.value));
+///   late final disposeEffect = effect(() => print(total.value));
 ///
 ///   @override
 ///   void initState() {
@@ -37,7 +37,7 @@ import '../utils/source_edit_plan.dart';
 /// class _DashboardState extends State<Dashboard> {
 ///   late final ReactiveScope _scope = ReactiveScope();
 ///   late final Computed<int> total;
-///   late final Disposer disposeEffect;
+///   late final void Function() disposeEffect;
 ///
 ///   @override
 ///   void initState() {
@@ -143,7 +143,7 @@ class IntroduceReactiveScopeAssist extends DartAssist {
       //    field with no initializer must be `late`).
       for (final eligible in result.eligibleFields) {
         final variable = eligible.variable;
-        final typeText = _typeTextFor(variable);
+        final typeText = _typeTextFor(variable, checker);
         if (typeText == null) return; // stay silent; should not happen
         edits.add(
           SourceTextEdit(
@@ -212,13 +212,41 @@ class IntroduceReactiveScopeAssist extends DartAssist {
     });
   }
 
-  String? _typeTextFor(VariableDeclaration variable) {
+  /// Text for the explicit type annotation the rewritten, initializer-less
+  /// `late final <type> <name>;` declaration needs.
+  ///
+  /// If the original declaration already wrote an explicit type, that
+  /// exact text is reused byte-for-byte — it was already resolving in this
+  /// file, whatever the reason, so it is safe to repeat verbatim.
+  ///
+  /// Otherwise the type was only ever *inferred* (no type ever appeared as
+  /// source text), and the fallback below must not blindly print
+  /// `DartType.getDisplayString()`'s alias name: `Disposer` (the alias an
+  /// `effect(...)` initializer infers) is `typedef Disposer = void
+  /// Function();` in `lib/src/core/typedefs.dart`, which the real,
+  /// published `all_observer` package's own `lib/all_observer.dart` barrel
+  /// file never exports — confirmed directly against the real source, not
+  /// assumed. A field that only ever relied on inferring `Disposer` has no
+  /// guarantee that name is actually in scope; printing it back as an
+  /// explicit annotation can produce code that fails to resolve
+  /// (`undefined_class`) even though the pre-migration source compiled
+  /// fine. The alias's own underlying structural type (`void Function()`)
+  /// always compiles instead, with no dependency on what the consumer's
+  /// import surface happens to expose. `Computed`/`Worker` (this
+  /// migration's other two auto-captured kinds) are both real, exported,
+  /// nameable classes, so they are unaffected by this and keep using
+  /// `getDisplayString()` as before.
+  String? _typeTextFor(
+    VariableDeclaration variable,
+    AllObserverTypeChecker checker,
+  ) {
     final variableList = variable.parent;
     final explicitType = variableList is VariableDeclarationList
         ? variableList.type
         : null;
     if (explicitType is NamedType) return explicitType.toSource();
     final declaredType = variable.declaredFragment?.element.type;
+    if (checker.isDisposerType(declaredType)) return 'void Function()';
     return declaredType?.getDisplayString();
   }
 
