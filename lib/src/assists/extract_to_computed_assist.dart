@@ -453,7 +453,9 @@ class _ImpurityCollector extends RecursiveAstVisitor<void> {
 }
 
 Element? _elementOf(Expression expression) {
-  if (expression is SimpleIdentifier) return _canonicalElement(expression.element);
+  if (expression is SimpleIdentifier) {
+    return _canonicalElement(expression.element);
+  }
   if (expression is PropertyAccess) {
     return _canonicalElement(expression.propertyName.element);
   }
