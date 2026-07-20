@@ -48,7 +48,7 @@ void main() {
       final transformed = applyPrioritizedChange(source, changes.single);
       expect(
         transformed,
-        contains(r"Observer(" '\n' r"  () => Text('${first.value} ${second.value}'),"),
+        contains(r'Observer(' '\n' r"  () => Text('${first.value} ${second.value}'),"),
       );
     });
 
@@ -69,7 +69,7 @@ void main() {
         final transformed = applyPrioritizedChange(source, changes.single);
         expect(
           transformed,
-          contains(r"Observer(" '\n' r"  () => Text('${first.value}'),"),
+          contains(r'Observer(' '\n' r"  () => Text('${first.value}'),"),
         );
         // The second Text (and the Row) must remain untouched.
         expect(transformed, contains(r"Text('${second.value}')"));
@@ -96,7 +96,7 @@ void main() {
         expect(
           transformed,
           contains(
-            r"Observer(" '\n' r"  () => Text('${items[index].value}'),",
+            r'Observer(' '\n' r"  () => Text('${items[index].value}'),",
           ),
         );
       },

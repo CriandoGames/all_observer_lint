@@ -60,7 +60,7 @@ void main() {
           transformed,
           contains(
             "late final computedValue = Computed(() => '"
-            r"${first.value} ${last.value}"
+            r'${first.value} ${last.value}'
             "');",
           ),
         );

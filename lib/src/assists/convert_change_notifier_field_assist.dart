@@ -151,7 +151,11 @@ class ConvertChangeNotifierFieldAssist extends DartAssist {
           length: fieldDeclaration.length,
           replacement: newDeclaration,
         ),
-        SourceTextEdit(offset: getter.offset, length: getter.length, replacement: ''),
+        SourceTextEdit(
+          offset: getter.offset,
+          length: getter.length,
+          replacement: '',
+        ),
       ];
 
       final valueExpression = '$publicName.value';

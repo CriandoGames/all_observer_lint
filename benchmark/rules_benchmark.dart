@@ -49,6 +49,7 @@ Future<void> _runUnusedReactiveState(
     final benchResult = await measureAsync(
       label: 'unused_reactive_state (fieldCount=$fieldCount)',
       body: () async {
+        // ignore: invalid_use_of_visible_for_testing_member
         await rule.testRun(result);
       },
     );
@@ -73,6 +74,7 @@ Future<void> _runDisposeReactiveResources(
     final benchResult = await measureAsync(
       label: 'dispose_reactive_resources (resourceCount=$resourceCount)',
       body: () async {
+        // ignore: invalid_use_of_visible_for_testing_member
         await rule.testRun(result);
       },
     );

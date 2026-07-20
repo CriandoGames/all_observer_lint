@@ -89,8 +89,9 @@ class ConvertValueNotifierAssist extends DartAssist {
       final constructorType = initializer.constructorName.type;
 
       final variableList = field.parent;
-      final explicitType =
-          variableList is VariableDeclarationList ? variableList.type : null;
+      final explicitType = variableList is VariableDeclarationList
+          ? variableList.type
+          : null;
 
       final declaredElement = field.declaredFragment?.element;
       final element = declaredElement == null

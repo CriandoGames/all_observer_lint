@@ -231,7 +231,7 @@ class ChangeNotifierFieldMigrationAnalyzer {
         } else {
           return MigrationSafetyResult.silent([
             'a conflicting member named $publicName exists (not a pure '
-            'getter)',
+                'getter)',
           ]);
         }
       }
@@ -250,9 +250,7 @@ class ChangeNotifierFieldMigrationAnalyzer {
     final fieldElement = _canonicalElement(declaredElement);
     final getterElement = _canonicalElement(getter.declaredFragment?.element);
     if (fieldElement == null || getterElement == null) {
-      return MigrationSafetyResult.silent([
-        'unresolved field/getter element',
-      ]);
+      return MigrationSafetyResult.silent(['unresolved field/getter element']);
     }
 
     // The field is already indexed (`UnitSemanticIndex.declarations` covers
@@ -265,7 +263,7 @@ class ChangeNotifierFieldMigrationAnalyzer {
       if (node is! SimpleIdentifier) {
         return MigrationSafetyResult.silent([
           'occurrence at ${occurrence.node.offset} is not a simple '
-          'identifier reference',
+              'identifier reference',
         ]);
       }
       if (node.offset < classNode.offset || node.end > classNode.end) {

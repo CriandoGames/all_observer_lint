@@ -405,6 +405,50 @@ Still deferred:
     that shape;
   - multiple fields converted together, or a whole-class batch conversion,
     is not offered, mirroring Etapa E's same scope limit.
+- **Resolved (Etapa H, final scheduled migration):** consolidating two or
+  more scope-eligible fields (`Computed`/`Worker`/an `effect()` `Disposer`)
+  into a single `ReactiveScope`, via `ReactiveScopeIntroductionAnalyzer`
+  (`lib/src/migrations/reactive_scope_introduction_analyzer.dart`) and
+  `IntroduceReactiveScopeAssist` (`lib/src/assists/
+  introduce_reactive_scope_assist.dart`). Still out of scope for this first
+  version:
+  - a `FieldDeclaration` sharing one `VariableDeclarationList` across
+    several variables (`final a = ..., b = ...;`) is skipped entirely
+    rather than attempting a partial-list edit — only the overwhelmingly
+    common one-variable-per-declaration shape is handled;
+  - `ObservableFuture`/`ObservableStream`/`ObservableHistory`/
+    `ObservableSubscription` are never moved into the introduced scope,
+    since none of them auto-register with `ReactiveScope.run()` (confirmed
+    against the real source — only `Computed`/`effect()`/`Worker` call
+    `ReactiveScope.current?.add(...)` in their own constructors). Manually
+    registering one of these via `scope.add(...)` as part of the same
+    rewrite is not attempted;
+  - a class that already declares an explicit constructor is left alone
+    entirely, rather than proving no unsafe read happens in it — this
+    narrows to the structurally-safe case (no custom constructor at all)
+    instead of attempting whole-constructor-body reasoning;
+  - disposal delegated to a same-class helper method (the same shape
+    `dispose_reactive_resources` already follows loosely) is not followed
+    here — this analyzer requires the literal disposal statement to be
+    found directly inside `dispose()`'s own block, so a helper-delegated
+    candidate is silently excluded rather than guessed at;
+  - reusing an already-present `ReactiveScope` field (if a class happens to
+    have one under some other name) is not supported — the assist only
+    ever introduces its own, fixed-name `_scope` field, and stays
+    unavailable if a member named `_scope` already exists;
+  - multiple fields converted together is exactly what this assist does
+    (unlike every earlier Etapa, which converts one field at a time), but
+    it never merges *two separate* pre-existing `ReactiveScope`s, nor
+    offers a partial consolidation (e.g. only 2 of 3 eligible fields) —
+    it is all-or-nothing per class, per invocation.
+- **Etapa G (`AsyncState`) — explicitly deferred**, by the driving user's
+  own decision when asked to scope it (options offered were: rule-only
+  diagnostic, rule + restricted assist, or defer entirely; "defer" was
+  chosen). No analyzer, rule, or assist code exists for it yet. Revisit
+  with a fresh scoping discussion before attempting it — see the note
+  below this one for the pre-existing "setState, Future, Stream, and
+  complete AsyncState migrations" backlog entry, which already tracked
+  this as unstarted before the explicit deferral decision.
 - **Staging note:** the brief's own Part 13 ("Plano de implementação em
   etapas") schedules Etapas A–H to Parts: infra, 6+7, 8, 9, 2, 1, 5, 10 —
   it never assigns a lettered Etapa to Part 3 (`redundant_observable_state`

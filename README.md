@@ -200,6 +200,22 @@ passing `this` as an argument anywhere in the class), and the field has
 exactly one matching getter with no occurrence of either symbol reaching
 outside the class.
 
+Selecting anywhere inside a `State` class with **two or more** fields
+initialized directly with `Computed`, `Worker` (via `ever`/`once`/
+`debounce`/`interval`), or an `effect()`-backed `Disposer` offers
+**Introduce ReactiveScope**: it adds a `late final ReactiveScope _scope =
+ReactiveScope();` field, moves each eligible field's initializer into a
+`_scope.run(() { ... })` block inside `initState()`, removes each field's
+individual disposal call, and adds a single `_scope.dispose();` call in
+`dispose()`. `ObservableFuture`/`ObservableStream`/`ObservableHistory`/
+`ObservableSubscription` are never included — they are not auto-captured
+by `ReactiveScope.run()`. Stays unavailable unless the class declares no
+explicit constructor, has `initState()`/`dispose()` with direct
+`super.initState();`/`super.dispose();` calls, has no existing `_scope`
+member, and at least two fields are each disposed directly in `dispose()`
+and never read immediately (outside a closure) from a sibling field's
+initializer.
+
 ## Presets
 
 | Preset | Use when |

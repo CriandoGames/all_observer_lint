@@ -699,6 +699,150 @@ No rule or quick fix ships with this — assist-only, same
 diagnostic/transformation separation as every prior stage — and no preset
 changed.
 
+## Assisted migrations — Etapa H: introduce ReactiveScope
+
+`lib/src/migrations/reactive_scope_introduction_analyzer.dart`
+(`ReactiveScopeIntroductionAnalyzer`) and `lib/src/assists/
+introduce_reactive_scope_assist.dart` (`IntroduceReactiveScopeAssist`)
+implement the project brief's Part 10 ("introdução segura de
+`ReactiveScope`"), the last of the staged migrations. Etapa G (`AsyncState`)
+was deferred by explicit decision — see `documentation/backlog.md`.
+
+**Why this cannot be a small, local edit.** Every other assist in this
+package rewrites code in place, at the position it already occupies.
+`ReactiveScope.run(fn)` only captures a `Computed`/`effect()`/`Worker`
+created *while it is executing* — confirmed by reading the real, published
+`all_observer` source directly (`core_computed.dart`, `effects/effect.dart`,
+`workers/workers.dart`): each of those three constructors calls
+`ReactiveScope.current?.add(...)` internally. A field with an inline
+initializer (`late final total = Computed(...);`) constructs its value as
+part of the instance's *construction*, before any `run()` call could
+possibly be active. Introducing a scope therefore genuinely requires moving
+the initializer out of the field declaration and into an assignment
+statement inside a `_scope.run(() { ... })` block placed in `initState()` —
+the first migration in this package that relocates code between two
+different syntactic positions rather than only rewriting in place.
+
+**Not every disposable type is scope-eligible.** `ObservableFuture`,
+`ObservableStream`, `ObservableHistory`, and `ObservableSubscription` all
+share a disposal *method name* with a scope-eligible type
+(`.close()`/`.dispose()`), but `ReactiveScope`'s own class doc is explicit
+that none of them are auto-captured — they must be registered manually via
+`scope.add(...)`. The analyzer never infers eligibility from
+`ReactiveDisposalResolver`'s disposal *kind* alone; it always re-checks the
+field's actual type (`Computed`, `Worker`, or a `Disposer` whose initializer
+is proven to be a real `effect(...)` call).
+
+**Analyzer result shape is deliberately richer than usual.**
+`ReactiveScopeIntroductionResult` carries the ordered list of
+`ReactiveScopeEligibleField`s (each with its `FieldDeclaration`,
+`VariableDeclaration`, `ReactiveDisposalKind`, and the exact
+`ExpressionStatement` to delete) alongside the usual `MigrationSafetyResult`
+— unlike every earlier analyzer in this phase, which only returns the
+safety verdict. Re-deriving the eligible-fields list a second time inside
+the assist would mean re-running the same `DisposalIndex` walk and the same
+direct-block statement scan twice, with a real risk of the two derivations
+silently drifting apart; producing the list once and having the assist
+consume it directly removes that risk.
+
+**Class-level gates:**
+
+- has its own `initState()` with a directly-visible `super.initState();`
+  statement — the insertion point for the moved assignments;
+- has its own `dispose()` with a directly-visible `super.dispose();`
+  statement and a block body — mirrors the exact requirement
+  `ExtractReactiveExpressionToComputedAssist` (Etapa D) already uses, for
+  the same reason: only a persistent, lifecycle-managed object (not a
+  `StatelessWidget`, recreated every rebuild) can safely own a scope;
+- declares **no explicit constructor** — an explicit constructor body runs
+  *before* `initState()`, so a field it (or another field's inline
+  initializer) reads would now read an unassigned `late` field and throw.
+  Rather than prove no such read exists, this narrows to the case where it
+  structurally cannot happen: no custom constructor at all (the common case
+  for a `State` subclass);
+- has no existing member named `_scope` (the fixed name this assist always
+  introduces).
+
+**Field-level gates (all of the below, per candidate):**
+
+- a private or public, non-static field with a **direct** inline initializer
+  (an `InstanceCreationExpression`/`effect(...)`/worker-function call
+  resolved back to `all_observer` — the same directly-owned check
+  `dispose_reactive_resources` already applies, reused here);
+- the field's type is scope-auto-captured: `Computed`, `Worker`, or a
+  `Disposer`-typed field whose initializer is a real `effect(...)` call;
+- exactly one variable per `FieldDeclaration` (`final a = ..., b = ...;`
+  sharing one declaration is skipped rather than attempting a partial-list
+  edit — see `documentation/backlog.md`);
+- already disposed correctly, with the exact matching contract, by a
+  statement **directly** inside `dispose()`'s own block — not through a
+  local helper. `DisposalIndex` would still find a helper-delegated
+  disposal, but this analyzer additionally requires the literal statement
+  to edit be found directly, so a helper-delegated candidate is silently
+  excluded rather than guessed at;
+- never referenced *immediately* — outside any nested closure — from
+  another field's initializer anywhere in the class. A reference inside a
+  closure is different and deliberately not flagged:
+  `late final doubled = Computed(() => total.value * 2);` never reads
+  `total.value` at construction time, only whenever `doubled.value` is
+  later evaluated, by which point `initState()` (and `total`'s new
+  assignment inside it) has already run.
+  `_ImmediateElementReferenceFinder` models exactly this by refusing to
+  descend into any `FunctionExpression`. This refinement was caught during
+  implementation, before any test run: a first draft would have incorrectly
+  blocked this common, safe pattern.
+
+At least **two** fields must pass every gate above — introducing a scope
+for a single resource has no consolidation benefit and is not offered.
+
+**Edits**, in order:
+
+1. insert `late final ReactiveScope _scope = ReactiveScope();` right after
+   the class's opening brace;
+2. replace each eligible field's declaration with a bare
+   `late final <type> <name>;` (the initializer is removed from here);
+3. insert a `_scope.run(() { ... });` block at the `super.initState();`
+   statement, assigning every eligible field, in original declaration
+   order, to its original initializer expression;
+4. delete each eligible field's own disposal statement from `dispose()`;
+5. insert `_scope.dispose();` at the `super.dispose();` statement.
+
+Reuses `AllObserverSymbolImportResolver` (Etapa D/E/F) for a safe
+`ReactiveScope` reference. A defensive `_mergeSameOffsetEdits` step
+collapses any two edits that land at the exact same offset (e.g. the
+`_scope` field's zero-length insertion colliding with the first eligible
+field's declaration replacement when there is no whitespace between `{`
+and the first member) before handing the plan to `SourceEditPlan`, whose
+overlap check assumes edits at distinct offsets.
+
+**Bug fix (found by the regression run, Etapa H checkpoint):** the initial
+`_findDirectDisposalStatement` only matched a candidate's disposal
+statement when it parsed as a `MethodInvocation`. A bare, zero-argument
+`disposeEffect();` call — invoking an `effect()`-backed `Disposer` field,
+the `invokeCallback` disposal shape — does not always parse that way:
+depending on whether the callee resolves to an actual method or to a
+field/local variable of a callable type, the analyzer represents the exact
+same call syntax as either a `MethodInvocation` (bare-identifier call
+syntax always starts out this way at parse time) or a
+`FunctionExpressionInvocation` (once resolution determines the callee is
+a callable *value*, not a method — an implicit `.call()`). `DisposalIndex`
+already handles both shapes (see its own
+`visitFunctionExpressionInvocation` override), but this analyzer's
+separate, direct-block-only scan only checked the first, so a class
+combining a `Computed` field with an `effect()` `Disposer` field (the
+`ComputedAndEffectWidget` fixture) silently found only one eligible field
+instead of two, and the assist stayed unavailable rather than firing.
+Fixed by adding `_isDirectInvokeCallbackOf`, which checks both AST shapes
+for this one disposal kind, mirroring `DisposalIndex`'s existing handling
+exactly. The `Computed`+`Worker` and `Computed`+`Computed` combinations
+were unaffected, since `disposeMethod`/`closeMethod` disposal (an explicit
+`.dispose()`/`.close()` call on a target) is always a `MethodInvocation`
+and never hits this code path.
+
+No rule or quick fix ships with this — assist-only, same
+diagnostic/transformation separation as every prior stage — and no preset
+changed.
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and

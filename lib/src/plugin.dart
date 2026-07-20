@@ -3,6 +3,7 @@ import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'assists/convert_change_notifier_field_assist.dart';
 import 'assists/convert_value_notifier_assist.dart';
 import 'assists/extract_to_computed_assist.dart';
+import 'assists/introduce_reactive_scope_assist.dart';
 import 'assists/wrap_smallest_reactive_subtree_assist.dart';
 import 'assists/wrap_with_observer_assist.dart';
 import 'rules/async_inside_batch.dart';
@@ -40,6 +41,7 @@ class AllObserverLintPlugin extends PluginBase {
     ExtractReactiveExpressionToComputedAssist(),
     ConvertValueNotifierAssist(),
     ConvertChangeNotifierFieldAssist(),
+    IntroduceReactiveScopeAssist(),
   ];
 
   @override

@@ -116,14 +116,14 @@ class ValueNotifierMigrationAnalyzer {
       if (node is! SimpleIdentifier) {
         return MigrationSafetyResult.silent([
           'occurrence at ${occurrence.node.offset} is not a simple '
-          'identifier reference',
+              'identifier reference',
         ]);
       }
       if (_classify(node) == _UsageKind.unrecognized) {
         return MigrationSafetyResult.silent([
           'field is used in an unrecognized way at ${node.offset} — could '
-          'be a ValueListenable consumer, an argument to an unknown API, '
-          'or stored elsewhere',
+              'be a ValueListenable consumer, an argument to an unknown API, '
+              'or stored elsewhere',
         ]);
       }
     }

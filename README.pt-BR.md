@@ -203,6 +203,23 @@ passar `this` como argumento em qualquer lugar da classe), e o campo tenha
 exatamente um getter correspondente sem nenhuma ocorrência de nenhum dos
 dois símbolos alcançando fora da classe.
 
+Selecionar em qualquer lugar dentro de uma classe `State` com **dois ou
+mais** campos inicializados diretamente com `Computed`, `Worker` (via
+`ever`/`once`/`debounce`/`interval`), ou um `Disposer` vindo de `effect()`
+oferece **Introduce ReactiveScope**: adiciona um campo
+`late final ReactiveScope _scope = ReactiveScope();`, move o inicializador
+de cada campo elegível para dentro de um bloco `_scope.run(() { ... })` em
+`initState()`, remove a chamada de disposal individual de cada campo, e
+adiciona uma única chamada `_scope.dispose();` em `dispose()`.
+`ObservableFuture`/`ObservableStream`/`ObservableHistory`/
+`ObservableSubscription` nunca são incluídos — eles não são capturados
+automaticamente por `ReactiveScope.run()`. Fica indisponível a menos que a
+classe não declare construtor explícito, tenha `initState()`/`dispose()`
+com chamadas diretas a `super.initState();`/`super.dispose();`, não tenha
+um membro `_scope` já existente, e pelo menos dois campos sejam
+descartados diretamente em `dispose()` e nunca lidos imediatamente (fora
+de um closure) a partir do inicializador de outro campo.
+
 ## Presets
 
 | Preset | Quando usar |

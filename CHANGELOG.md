@@ -317,6 +317,61 @@ Computed).**
 - No rule or quick fix ships with this — assist-only — and no preset
   changed.
 
+**Assisted-migrations phase, Etapa H (introduce `ReactiveScope` — final
+scheduled migration).**
+
+- New `lib/src/migrations/reactive_scope_introduction_analyzer.dart`
+  (`ReactiveScopeIntroductionAnalyzer`) and `lib/src/assists/
+  introduce_reactive_scope_assist.dart` (`IntroduceReactiveScopeAssist`).
+  The first migration in this package to relocate code between two
+  different syntactic positions (a field initializer moved into an
+  `initState()` assignment) rather than only rewriting in place, since
+  `ReactiveScope.run(fn)` only captures a `Computed`/`effect()`/`Worker`
+  created *while it is executing* — confirmed directly against the real
+  `all_observer` source.
+- Consolidates **two or more** eligible fields (`Computed`, a `Worker`, or
+  an `effect()`-backed `Disposer`) into a single `late final ReactiveScope
+  _scope = ReactiveScope();`, moving each field's initializer into a
+  `_scope.run(() { ... });` block inserted at `super.initState();`, deleting
+  each field's own disposal call, and inserting `_scope.dispose();` at
+  `super.dispose();`.
+- **Not every disposable type qualifies** — `ObservableFuture`,
+  `ObservableStream`, `ObservableHistory`, and `ObservableSubscription`
+  share a disposal method name with a scope-eligible type but are never
+  auto-captured by `ReactiveScope.run()` per its own class doc, so this
+  analyzer always re-checks the field's actual type rather than inferring
+  eligibility from the disposal method name alone.
+- Stays silent unless the enclosing class: declares no explicit
+  constructor; has its own `initState()`/`dispose()` with direct
+  `super.initState();`/`super.dispose();` calls; has no existing `_scope`
+  member; and at least two fields each have a direct, scope-auto-captured
+  initializer, exactly one variable per declaration, a disposal statement
+  found directly inside `dispose()`'s own block, and no *immediate*
+  (non-lazy) cross-reference from a sibling field's initializer — a
+  reference inside a closure (`Computed(() => total.value * 2)`) is safe
+  and not flagged, since it only runs later, never during construction.
+- See `documentation/backlog.md` for what remains deferred (multi-variable
+  field declarations, manual `ObservableFuture`/`Stream`/`History`/
+  `Subscription` registration, explicit-constructor classes,
+  helper-delegated disposal, reusing an existing scope). Etapa G
+  (`AsyncState`) remains explicitly deferred by its own scoping decision —
+  also tracked there.
+- **Bug fix (found by the full regression run, Etapa H checkpoint):**
+  `_findDirectDisposalStatement` only recognized a disposal statement
+  shaped as a `MethodInvocation`. A bare `disposeEffect();` call (invoking
+  an `effect()`-backed `Disposer` field) can instead resolve as a
+  `FunctionExpressionInvocation`, depending on whether the analyzer treats
+  the callee as a method or as a callable value — `DisposalIndex` already
+  handled both shapes, but this analyzer's own direct-block scan only
+  checked one, so a class combining a `Computed` field with an `effect()`
+  `Disposer` field found only one eligible field instead of two and the
+  assist silently stayed unavailable. Fixed via a new
+  `_isDirectInvokeCallbackOf` helper that checks both shapes, mirroring
+  `DisposalIndex` exactly. The `Computed`+`Worker` and `Computed`+`Computed`
+  combinations were unaffected.
+- No rule or quick fix ships with this — assist-only — and no preset
+  changed.
+
 ## 0.5.1
 
 Stabilization patch, addressing the P0/P1 findings from the pre-publication
