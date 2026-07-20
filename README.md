@@ -33,7 +33,7 @@ Your `pubspec.yaml` should contain:
 ```yaml
 dev_dependencies:
   custom_lint: ^0.8.0
-  all_observer_lint: ^0.5.1
+  all_observer_lint: ^0.6.0
 ```
 
 `custom_lint` is required because it is the analyzer runner that loads custom
