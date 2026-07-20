@@ -174,6 +174,53 @@ count, not which classes matched).
 - No rule, quick fix, or preset changed by this entry — assist-only, per
   the phase's diagnostic/transformation separation.
 
+**Bug fix (found by the full regression run, Etapa D checkpoint):** a
+pre-existing test in `test/all_observer_lint_test.dart` still asserted
+`getAssists()` had length `1`, left over from before
+`WrapSmallestReactiveSubtreeAssist` was registered in Etapa C. Updated to
+assert both assists are present by type; no production code was at fault.
+
+**Assisted-migrations phase, Etapa D (extract reactive expression to
+Computed).**
+
+- New assist `ExtractReactiveExpressionToComputedAssist`
+  (`lib/src/assists/extract_to_computed_assist.dart`): on a selection that
+  reads two or more *distinct* reactive values (e.g. `price.value *
+  quantity.value`), extracts the smallest such expression to a `late final
+  <name> = Computed(() => <expression>)` field and replaces the selection
+  with `<name>.value`. Registered alongside the other two Widget-wrap
+  assists, never replacing them.
+- Deliberately the narrowest safe slice of the brief's Part 9, per
+  "permanecer silencioso em caso de dúvida": the candidate must contain no
+  assignment, `++`/`--`, `await`, nested closure, reactive-resource
+  creation, or **any method call at all** (the most conservative possible
+  reading of "no impure call" — general call purity is undecidable from
+  syntax alone); every identifier in it must resolve to an instance field
+  or top-level declaration, never a local variable, a parameter,
+  `BuildContext`, or a `State`'s `widget` accessor; and the enclosing class
+  must declare its own `dispose()` with a directly-visible
+  `super.dispose();` (where `<name>.close()` is inserted) — required for
+  correctness, not just convenience, since only a `State` object is
+  guaranteed to run a `late final` field's initializer exactly once (a
+  `StatelessWidget` field would be silently recreated every rebuild). See
+  `documentation/architecture.md` for the full gate-by-gate rationale and
+  `documentation/backlog.md` for what is explicitly deferred (repeated-
+  expression triggering, a `dart:core` call allow-list, `widget.`-dependent
+  insertion via `initState()`, skipping `close()` inside an existing
+  `ReactiveScope.run()`, and evidence-based naming).
+- Naming always falls back to the brief's own documented default —
+  `computedValue`, `computedValue2`, ... — never a name guessed from the
+  expression's shape.
+- New `lib/src/utils/all_observer_symbol_import_resolver.dart`
+  (`AllObserverSymbolImportResolver`) generalizes
+  `AllObserverImportResolver`'s collision/shadowing/prefix-fallback logic
+  to any `all_observer` top-level symbol (not just `Observer`), as a new,
+  separate file — the existing, already-tested `Observer`-specific
+  resolver is untouched. Intended for reuse by the remaining migration
+  assists (Etapas E–H).
+- No rule or quick fix ships with this — assist-only — and no preset
+  changed.
+
 ## 0.5.1
 
 Stabilization patch, addressing the P0/P1 findings from the pre-publication

@@ -162,6 +162,18 @@ sem tocar nos irmãos ao redor, e que fica indisponível quando a leitura só
 alcança um Widget através de uma closure de evento (ex.: `onPressed`) ou
 quando o Widget já é exatamente a raiz de um builder `Observer` existente.
 
+Selecionar uma expressão que lê dois ou mais valores reativos distintos
+(ex.: `price.value * quantity.value`) oferece **Extract reactive expression
+to Computed**: adiciona um campo `late final <nome> = Computed(() =>
+<expressão>)` e substitui a seleção por `<nome>.value`. Esta primeira
+versão é deliberadamente restrita — sem chamadas de método, sem variáveis
+locais/parâmetros, sem acesso a `BuildContext`/`widget.` em nenhum lugar da
+expressão, e a classe precisa ser um `State` com seu próprio `dispose()`/
+`super.dispose()` (onde `<nome>.close()` é inserido) — e sempre usa um nome
+genérico de fallback (`computedValue`, `computedValue2`, ...) em vez de
+tentar adivinhar um a partir da expressão. Veja
+`documentation/architecture.md` para a lista completa de critérios.
+
 ## Presets
 
 | Preset | Quando usar |

@@ -299,6 +299,50 @@ Still deferred:
     than factored into a shared helper, trading a small amount of code
     duplication for zero risk to that already-tested assist. Revisit this
     if a third assist ever needs the same check.
+- **Resolved (Etapa D):** limited extraction of a derived reactive
+  expression to `Computed`, via the new
+  `ExtractReactiveExpressionToComputedAssist`
+  (`lib/src/assists/extract_to_computed_assist.dart`). Still out of scope
+  for this first version:
+  - the brief's alternate trigger — offering extraction because the *same*
+    expression is repeated more than once, rather than because it reads
+    two or more distinct reactive values — is not implemented;
+  - "no impure call" is read maximally conservatively: **any** method call
+    anywhere in the candidate blocks it, not just known-impure ones (e.g.
+    `price.value.toStringAsFixed(2)` is blocked even though
+    `toStringAsFixed` is a harmless `dart:core` method). A curated
+    allow-list of known-pure `dart:core` methods would let more real-world
+    expressions qualify without reintroducing general-call-purity risk —
+    tracked here rather than guessed at now;
+  - a dependency reached through `widget.` (a `State`'s accessor for its
+    `StatefulWidget`) is blocked outright rather than supported: the
+    brief's own example splits this case into an `initState()`-assigned
+    field instead of a field initializer, which this version does not
+    implement;
+  - skipping the individual `<name>.close()` call when the new field would
+    be created inside an existing `ReactiveScope.run()` (Etapa H's own
+    migration, not built yet) is not implemented — v1 always adds the
+    `dispose()`-based `close()` call;
+  - naming is always the generic fallback (`computedValue`,
+    `computedValue2`, ...) — the brief's evidence-based naming (`total`,
+    `fullName`, `filteredItems`, ...) would need real confidence scoring
+    this package does not have, so it is not attempted rather than guessed;
+  - only a `State` subclass with its own `dispose()`/`super.dispose()` is
+    supported as the owner — a `StatelessWidget` (recreated every rebuild,
+    so a field there would silently recreate the `Computed` every time,
+    exactly the bug class `avoid_reactive_creation_in_build` exists to
+    catch) and a plain class with no such `dispose()` shape are left alone;
+  - `lib/src/utils/all_observer_symbol_import_resolver.dart`
+    (`AllObserverSymbolImportResolver`) generalizes
+    `AllObserverImportResolver`'s collision/shadowing/prefix logic to any
+    `all_observer` symbol, but is a **new, separate file** rather than a
+    refactor of the existing `Observer`-specific resolver — parameterizing
+    the existing, already-tested class in place would have meant touching
+    every one of its internal call sites at once; duplicating the (small,
+    stable) algorithm once more was the lower-risk choice, matching the
+    same trade-off already made for `WrapSmallestReactiveSubtreeAssist`'s
+    duplicated root-check above. The remaining stages (E–H) should reuse
+    this new resolver rather than hand-roll another one.
 - `setState`, `ValueNotifier`, `ChangeNotifier`, listener, Future, Stream, and
   complete `AsyncState` migrations;
 - Observable-to-plain-value conversion and cross-file migrations;

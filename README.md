@@ -161,6 +161,18 @@ read only reaches a Widget through an event-handler closure (e.g.
 `onPressed`) or when the Widget is already exactly the root of an enclosing
 `Observer` builder.
 
+Selecting an expression that reads two or more distinct reactive values
+(e.g. `price.value * quantity.value`) offers **Extract reactive expression
+to Computed**: it adds a `late final <name> = Computed(() => <expression>)`
+field and replaces the selection with `<name>.value`. This first version is
+deliberately narrow — no method calls, no locals/parameters, no
+`BuildContext`/`widget.` access anywhere in the expression, and the
+enclosing class must be a `State` with its own `dispose()`/
+`super.dispose()` (where `<name>.close()` is inserted) — and always uses a
+generic fallback name (`computedValue`, `computedValue2`, ...) rather than
+guessing one from the expression. See `documentation/architecture.md` for
+the full list of gates.
+
 ## Presets
 
 | Preset | Use when |

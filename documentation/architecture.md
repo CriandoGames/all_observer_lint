@@ -401,6 +401,94 @@ manually in those cases. See `documentation/backlog.md`, "Still deferred".
 No rule, quick fix, or preset changed in this step — assist-only, matching
 the phase's diagnostic/transformation separation.
 
+## Assisted migrations — Etapa D: extract reactive expression to Computed
+
+`lib/src/assists/extract_to_computed_assist.dart`
+(`ExtractReactiveExpressionToComputedAssist`) offers, on a selection that
+reads two or more distinct reactive values, to extract that expression to
+a `late final <name> = Computed(() => <expression>)` field and replace the
+selection with `<name>.value`. It is registered alongside the other two
+Widget-wrap assists, never replacing them.
+
+**Candidate search.** `_CandidateFinder` uses
+`GeneralizingAstVisitor.visitExpression` (not `RecursiveAstVisitor`,
+because a qualifying candidate can be *any* expression shape —
+`BinaryExpression`, `StringInterpolation`, a `ConditionalExpression`, ...
+— unlike `WrapSmallestReactiveSubtreeAssist`'s search, which only ever
+looks for one specific `.value`-access shape) to examine every expression
+containing the selection and picks the smallest one that both reads two or
+more *distinct* `.value` targets and passes every gate below. This is why
+`price.value * quantity.value` inside `Text('${price.value *
+quantity.value}')` extracts just the multiplication, while `'${first.value}
+${last.value}'` (two reads, each alone in its own interpolation section)
+extracts the whole string — nothing smaller than the full interpolation
+has two distinct reads in that second case.
+
+**Every gate below runs as a single pass (`_ImpurityCollector`) so that a
+disqualifying construct anywhere in the candidate's subtree is caught
+regardless of nesting.** The assist requires, all at once:
+
+- **Purity** — no assignment; no `++`/`--`; no `await`; no nested
+  `FunctionExpression`; no reactive-resource creation (`Observable`/
+  `Computed`/the reactive collections/`ObservableFuture`/
+  `ObservableStream`/`ReactiveScope`, or a `.obs` access); and, most
+  conservatively, **no method call of any kind**. General call purity is
+  undecidable from syntax alone; this package's policy is silence over a
+  risky guess, so v1 simply disallows every `MethodInvocation` rather than
+  trying to curate a safe subset. See `documentation/backlog.md` for the
+  planned loosening (a curated `dart:core` allow-list).
+- **Locality** — every identifier in the candidate (reactive or not) must
+  resolve to an instance field or a top-level declaration, never a local
+  variable or parameter: a field-level `late final` cannot close over
+  either. This is checked generically over every `SimpleIdentifier`
+  (`element is LocalVariableElement || element is FormalParameterElement`),
+  which also transparently covers the prefix of a `PrefixedIdentifier`
+  (`count` in `count.value`) via the same recursive visit every other node
+  here relies on — with one deliberate exception: a named-argument label
+  (`x` in `Point(x: x.value)`) resolves to the *callee's* parameter, not a
+  reference in the current scope, and is skipped (`node.parent is Label`).
+  The same mechanism also blocks `BuildContext` (any identifier whose
+  static type resolves to Flutter's `BuildContext`) and `widget` (a
+  `State`'s accessor for its `StatefulWidget`, resolved via its declaring
+  library rather than by name alone) — supporting either would need an
+  `initState()`-based insertion instead of a field initializer, which this
+  version does not implement.
+- **Owner lifecycle** — the enclosing class must declare its own
+  `dispose()` with a directly-visible `super.dispose();` (the exact same
+  shape `dispose_reactive_resources`/`AddDisposeCallFix` already require
+  and insert before, duplicated here rather than shared — see
+  `documentation/backlog.md`). This is a correctness requirement, not just
+  a convenience: only a `State` object persists unchanged across rebuilds,
+  so only there is a `late final` field guaranteed to run its initializer
+  exactly once. A field added to a `StatelessWidget` — recreated on every
+  rebuild — would silently reproduce the exact "recreated every rebuild"
+  bug class `avoid_reactive_creation_in_build` exists to catch elsewhere in
+  this package, which is why a missing `dispose()` (as on any
+  `StatelessWidget`) leaves the assist unavailable rather than falling back
+  to some other insertion point.
+
+**Naming.** The brief asks for a derived name (`total`, `fullName`, ...)
+"somente quando houver confiança". This package has no reliable way to
+infer meaning from an arbitrary expression shape, so v1 always uses the
+brief's own documented fallback — `computedValue`, or `computedValue2`,
+`computedValue3`, ... the first name not already declared in the class —
+rather than guess. Smarter naming is tracked in `documentation/backlog.md`.
+
+**Import safety.** `lib/src/utils/all_observer_symbol_import_resolver.dart`
+(`AllObserverSymbolImportResolver`) generalizes
+`AllObserverImportResolver` (which stays hard-coded to `Observer` and is
+deliberately left untouched — see `documentation/backlog.md`) to resolve
+*any* `all_observer` top-level symbol the same way: reuse an existing
+prefixed import, reuse an existing unprefixed import only if nothing
+shadows it, or fall back to a freshly, uniquely prefixed import
+(`allObserver.Computed`, `allObserver2.Computed`, ...). This is written to
+be reused by the ChangeNotifier/ValueNotifier/AsyncState/ReactiveScope
+assists in the remaining stages, all of which will need to reference other
+`all_observer` symbols just as safely.
+
+No rule or quick fix ships with this — assist only, per the phase's
+diagnostic/transformation separation — and no preset changed.
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and
