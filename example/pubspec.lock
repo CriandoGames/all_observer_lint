@@ -13,10 +13,10 @@ packages:
     dependency: "direct main"
     description:
       name: all_observer
-      sha256: b3e35a8b5cd4156edadf290f38c9c8573b13d485f64712f479e80ddf1e960139
+      sha256: "62c768fa861a0c802e111e56a5550dfd2778c013584577999ed3ed8c2017a729"
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.3"
+    version: "1.5.6"
   all_observer_lint:
     dependency: "direct dev"
     description:

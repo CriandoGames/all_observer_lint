@@ -155,6 +155,13 @@ sombreando, ou outro import sem prefixo que também exponha `Observer`). Ele
 não aparece em callbacks, contextos já rastreados, `watch(context)`,
 contextos constantes ou código não resolvido.
 
+Selecionar uma leitura reativa `.value` (de um `Observable`/`Computed`)
+também oferece **Wrap smallest reactive subtree with Observer** — uma ação
+mais específica, que envolve apenas o menor Widget que contém essa leitura,
+sem tocar nos irmãos ao redor, e que fica indisponível quando a leitura só
+alcança um Widget através de uma closure de evento (ex.: `onPressed`) ou
+quando o Widget já é exatamente a raiz de um builder `Observer` existente.
+
 ## Presets
 
 | Preset | Quando usar |
@@ -187,6 +194,7 @@ contextos constantes ou código não resolvido.
 | [`observer_without_reactive_read`](documentation/pt-BR/rules/observer_without_reactive_read.md) | Builders de `Observer` sem leitura rastreada comprovada (strict/all). |
 | [`computed_without_reactive_read`](documentation/pt-BR/rules/computed_without_reactive_read.md) | Callbacks de `Computed` sem leitura rastreada comprovada (strict/all). |
 | [`effect_without_reactive_read`](documentation/pt-BR/rules/effect_without_reactive_read.md) | Callbacks de `effect` sem leitura rastreada comprovada (strict/all). |
+| [`copied_reactive_collection_outside_tracking`](documentation/pt-BR/rules/copied_reactive_collection_outside_tracking.md) | Uma coleção reativa copiada para um snapshot comum antes de um `Observer`/`Computed`/`effect` que só lê o snapshot (strict/all). |
 
 ## Mais Documentação
 

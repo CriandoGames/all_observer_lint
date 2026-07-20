@@ -89,6 +89,11 @@ class DiagnosticMessagesPtBr implements DiagnosticMessages {
     DiagnosticMessageKey.effectWithoutReactiveRead:
         'Este callback de effect nao possui leitura reativa rastreada visivel '
         'estaticamente e nao executara novamente por estado all_observer.',
+    DiagnosticMessageKey.copiedReactiveCollectionOutsideTracking:
+        'Esta colecao foi copiada antes de entrar no escopo de rastreamento. '
+        'O Observer/Computed/effect le um snapshot comum e nao sera '
+        'atualizado quando a colecao original mudar. Copie-a dentro do '
+        'escopo de rastreamento, ou derive-a com Computed.',
   };
 
   @override

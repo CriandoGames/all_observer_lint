@@ -1,4 +1,6 @@
 import 'package:all_observer_lint/all_observer_lint.dart';
+import 'package:all_observer_lint/src/assists/wrap_smallest_reactive_subtree_assist.dart';
+import 'package:all_observer_lint/src/assists/wrap_with_observer_assist.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:test/test.dart';
 
@@ -13,6 +15,13 @@ void main() {
   });
 
   test('plugin registers Wrap with Observer assist', () {
-    expect(createPlugin().getAssists(), hasLength(1));
+    expect(createPlugin().getAssists(), hasLength(2));
+  });
+
+  test('plugin registers both the permissive and the specialized '
+      'wrap-with-Observer assists', () {
+    final assists = createPlugin().getAssists();
+    expect(assists, contains(isA<WrapWithObserverAssist>()));
+    expect(assists, contains(isA<WrapSmallestReactiveSubtreeAssist>()));
   });
 }

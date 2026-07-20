@@ -1,5 +1,6 @@
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 
+import 'assists/wrap_smallest_reactive_subtree_assist.dart';
 import 'assists/wrap_with_observer_assist.dart';
 import 'rules/async_inside_batch.dart';
 import 'rules/avoid_effect_creation_in_build.dart';
@@ -9,6 +10,7 @@ import 'rules/avoid_reactive_creation_in_build.dart';
 import 'rules/avoid_reactive_write_in_computed.dart';
 import 'rules/avoid_set_state_in_computed.dart';
 import 'rules/avoid_worker_creation_in_computed.dart';
+import 'rules/copied_reactive_collection_outside_tracking.dart';
 import 'rules/dispose_reactive_resources.dart';
 import 'rules/invalid_history_limit.dart';
 import 'rules/prefer_assign_all_for_reactive_list_replace.dart';
@@ -29,7 +31,10 @@ import 'rules/watch_only_inside_build.dart';
 /// does not re-implement that filtering.
 class AllObserverLintPlugin extends PluginBase {
   @override
-  List<Assist> getAssists() => [WrapWithObserverAssist()];
+  List<Assist> getAssists() => [
+    WrapWithObserverAssist(),
+    WrapSmallestReactiveSubtreeAssist(),
+  ];
 
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
@@ -59,5 +64,6 @@ class AllObserverLintPlugin extends PluginBase {
     ObserverWithoutReactiveRead(configs: configs),
     ComputedWithoutReactiveRead(configs: configs),
     EffectWithoutReactiveRead(configs: configs),
+    CopiedReactiveCollectionOutsideTracking(configs: configs),
   ];
 }

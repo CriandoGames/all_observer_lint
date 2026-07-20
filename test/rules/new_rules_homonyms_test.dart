@@ -1,4 +1,5 @@
 import 'package:all_observer_lint/src/rules/async_inside_batch.dart';
+import 'package:all_observer_lint/src/rules/copied_reactive_collection_outside_tracking.dart';
 import 'package:all_observer_lint/src/rules/invalid_history_limit.dart';
 import 'package:all_observer_lint/src/rules/tracking_scope_without_reactive_read.dart';
 import 'package:test/test.dart';
@@ -18,6 +19,12 @@ void main() {
     expect(await AsyncInsideBatch(configs: configs).testRun(result), isEmpty);
     expect(
       await ComputedWithoutReactiveRead(configs: configs).testRun(result),
+      isEmpty,
+    );
+    expect(
+      await CopiedReactiveCollectionOutsideTracking(
+        configs: configs,
+      ).testRun(result),
       isEmpty,
     );
   });

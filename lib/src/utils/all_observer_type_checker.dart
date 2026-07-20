@@ -81,6 +81,24 @@ class AllObserverTypeChecker {
 
   static const Set<String> _observerWidgetClassNames = {'Observer'};
 
+  // Flutter-only names used by the migration analyzers/assists introduced
+  // for the assisted-migrations phase (`lib/src/migrations/`,
+  // `lib/src/assists/convert_*`). These are matched exactly like every
+  // Flutter check above: through `_hasFlutterSupertypeNamed`/
+  // `_hasAnyFlutterSupertypeNamed`, i.e. a resolved element whose declaring
+  // library URI starts with `package:flutter/`, never by comparing an
+  // identifier's text alone — a local class named `ChangeNotifier` or
+  // `ValueNotifier` (see the homonym fixtures under
+  // `test/fixtures/consumer/lib/`) must never match.
+  static const String _changeNotifierClassName = 'ChangeNotifier';
+  static const String _valueNotifierClassName = 'ValueNotifier';
+  static const Set<String> _listenableClassNames = {
+    'Listenable',
+    'ValueListenable',
+    'ChangeNotifier',
+    'ValueNotifier',
+  };
+
   static const Set<String> _workerFunctionNames = {
     'ever',
     'once',
@@ -136,16 +154,19 @@ class AllObserverTypeChecker {
     return facts.flutterNames.contains(name);
   }
 
+  bool _hasAnyFlutterSupertypeNamed(DartType? type, Set<String> names) {
+    final facts = _resolveTypeFacts(type);
+    if (facts == null) return false;
+    return facts.flutterNames.any(names.contains);
+  }
+
   /// Returns the memoized [_TypeFacts] for [type]'s declaring element,
   /// computing and caching them on first use. Returns `null` for anything
   /// that is not an [InterfaceType] (functions, records, etc.), which never
   /// has a supertype chain to walk.
   _TypeFacts? _resolveTypeFacts(DartType? type) {
     if (type is! InterfaceType) return null;
-    return _typeFacts.putIfAbsent(
-      type.element,
-      () => _scanTypeHierarchy(type),
-    );
+    return _typeFacts.putIfAbsent(type.element, () => _scanTypeHierarchy(type));
   }
 
   /// Performs the actual supertype/interface/mixin traversal exactly once
@@ -171,7 +192,10 @@ class AllObserverTypeChecker {
       queue.addAll(element.interfaces);
       queue.addAll(element.mixins);
     }
-    return _TypeFacts(allObserverNames: allObserverNames, flutterNames: flutterNames);
+    return _TypeFacts(
+      allObserverNames: allObserverNames,
+      flutterNames: flutterNames,
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -362,6 +386,37 @@ class AllObserverTypeChecker {
   bool isFlutterWidgetType(DartType? type) =>
       _hasFlutterSupertypeNamed(type, 'Widget');
 
+  /// Whether [type] is (or extends) Flutter's `ChangeNotifier`, resolved
+  /// against `package:flutter/`. Used by the `ChangeNotifier` migration
+  /// analyzer/assist (`lib/src/migrations/change_notifier_migration_analyzer.dart`)
+  /// — never by comparing a class's name in isolation, so a local class
+  /// named `ChangeNotifier` (see the homonym fixtures) is never matched.
+  bool isChangeNotifierType(DartType? type) =>
+      _hasFlutterSupertypeNamed(type, _changeNotifierClassName);
+
+  /// Whether [type] is (or extends) Flutter's `ValueNotifier`, resolved
+  /// against `package:flutter/`. Used by the `ValueNotifier` migration
+  /// analyzer/assist (`lib/src/migrations/value_notifier_migration_analyzer.dart`).
+  bool isValueNotifierType(DartType? type) =>
+      _hasFlutterSupertypeNamed(type, _valueNotifierClassName);
+
+  /// Whether [type] is (or extends/implements) any Flutter `Listenable`-
+  /// shaped type (`Listenable`, `ValueListenable`, `ChangeNotifier`,
+  /// `ValueNotifier`). `all_observer`'s own `Observable`/`Computed` also
+  /// implement `ValueListenable` (see the real package's
+  /// `lib/src/observable/observable.dart`/`computed.dart`), so this
+  /// intentionally matches both an `all_observer` reactive value *and* a
+  /// plain Flutter notifier — callers that need to distinguish which one
+  /// must additionally check [isObservableType]/[isComputedType].
+  ///
+  /// Used to recognize `target.addListener(...)`/`target.removeListener(...)`
+  /// as operating on a genuine `Listenable`-shaped receiver (for the
+  /// listener-to-`effect`/`ever` migration and the semantic index's
+  /// listener-call collection), rather than matching any method merely
+  /// named `addListener`/`removeListener` regardless of its receiver.
+  bool isFlutterListenableType(DartType? type) =>
+      _hasAnyFlutterSupertypeNamed(type, _listenableClassNames);
+
   /// Whether [type] is the public `Disposer` callback typedef.
   bool isDisposerType(DartType? type) {
     final alias = type?.alias?.element;
@@ -397,7 +452,10 @@ class AllObserverTypeChecker {
 /// both sets, so [AllObserverTypeChecker] never runs a separate walk per
 /// category (`Observable`, `Computed`, `Widget`, ...).
 class _TypeFacts {
-  const _TypeFacts({required this.allObserverNames, required this.flutterNames});
+  const _TypeFacts({
+    required this.allObserverNames,
+    required this.flutterNames,
+  });
 
   final Set<String> allObserverNames;
   final Set<String> flutterNames;

@@ -61,12 +61,21 @@ false-positive risks.
   (e.g. `_disposeWith(worker)`), lives in a different class/mixin, or is
   reached only through a tear-off, is not followed — the field is still
   flagged in those cases.
-- `ReactiveWriteDetector` only recognizes `.value` assignment/increment/
-  decrement, not broad reactive-collection mutation (`list.add(...)`,
-  `map[key] = value`). The targeted `ObservableList.clear()` followed by
-  `add`/`addAll` replacement pattern is covered by
-  `prefer_assign_all_for_reactive_list_replace`, but general collection write
-  detection remains future work.
+- **Resolved (Etapa B, assisted-migrations phase):** `ReactiveWriteDetector`
+  now also recognizes reactive-collection mutations/replacements
+  (`list.add(...)`, `map['k'] = v`, `list.length = n`, `list.assignAll(...)`,
+  ...) via `ReactiveCollectionOperationClassifier`, in addition to `.value`
+  assignment/increment/decrement — so `avoid_reactive_write_in_computed` and
+  `avoid_observable_write_during_observer_build` now catch both. The
+  targeted `ObservableList.clear()` followed by `add`/`addAll` replacement
+  pattern remains separately covered by
+  `prefer_assign_all_for_reactive_list_replace`.
+  Still not widened: `prefer_batch_for_multiple_related_writes` only counts
+  `.value` writes toward its "multiple related writes" heuristic, not
+  collection mutations — tracked as follow-up work, not attempted in Etapa B
+  to keep that change reviewable on its own (widening a `strict`-only,
+  info-level rule's heuristic carries different risk than widening the two
+  `recommended`, `warning`-level purity rules).
 - `avoid_io_in_computed` only recognizes `dart:io` and `await`; common HTTP
   client packages, platform channels, and database packages are not covered.
 - A closure that is textually nested inside a `Computed` callback but only
@@ -191,6 +200,68 @@ deliberately narrow scope of that. Still open from that review:
   scope (see the task brief, "não ampliar o escopo para referências entre
   arquivos nesta mudança").
 
+## Assisted-migrations phase — real-runtime audit notes (Etapa A)
+
+Before writing `ReactiveCollectionOperationClassifier` and
+`UnitSemanticIndex`, the real, published `all_observer` source (pinned
+`1.5.6`, the same version `test/fixtures/real_runtime_smoke` targets) was
+re-read directly for every collection/effect/worker/scope/async API this
+phase touches. Two corrections against the phase's own illustrative brief:
+
+- **`ObservableMap`/`ObservableSet` do not have `assign`/`assignAll`.**
+  Only `ObservableList` does
+  (`lib/src/observable/collections/observable_list.dart` in the real
+  package). The classifier's `_mapMutationMethods`/`_setMutationMethods`
+  sets deliberately do not include them; a rule that assumed otherwise
+  would silently never fire for Map/Set (safe) or, worse, suggest a
+  non-existent method (unsafe) — this was caught before either could
+  happen.
+- **`ObservableList` also has `addIf`, `addAllIf`, `addIfNotNull`** —
+  convenience mutators not previously tracked anywhere in this package.
+  Added to the classifier's mutation set.
+- **`effect()` runs its body immediately, synchronously, on creation** —
+  confirmed in `lib/src/effects/effect.dart`. A plain
+  `observable.addListener(callback)` (or `Observable.listen(callback)`,
+  default `immediate: false`) does *not* run immediately. This means
+  "convert `addListener` to `effect`" is **not** a behavior-preserving
+  transformation in general — the callback would gain an extra immediate
+  invocation it never had. `ever(observable, callback)` (built on
+  `Observable.listen` with the same `immediate: false` default) *is*
+  behavior-preserving for the "runs only on future changes" shape. The
+  listener-to-`effect`/`ever` migration analyzer (Etapa in progress) must
+  offer these as two distinct, separately-justified actions ("Convert
+  listener to effect" vs. "Convert listener to ever worker") exactly as
+  the phase brief requires, and must not default to `effect` just because
+  it is the more general primitive.
+- **`Observable`/`Computed` both `implements ValueListenable<T>` in the
+  real package** (`lib/src/observable/observable.dart`,
+  `lib/src/observable/computed.dart`), including working
+  `addListener`/`removeListener`. `test/fixtures/fake_all_observer` does
+  **not** yet model this (its `Observable`/`Computed` have no
+  `addListener`/`removeListener` at all) — a pre-existing gap, not
+  introduced by this phase. Practical implication verified against the
+  real source: a `ValueNotifier` field converted to an `Observable` and
+  left wired into an unchanged `ValueListenableBuilder` continues to
+  compile and behave correctly, since `Observable` already satisfies
+  `ValueListenable` — the illustrative brief's assumption that a
+  `ValueListenableBuilder` consumer must always block the `ValueNotifier`→
+  `Observable` conversion is stricter than the real runtime requires. The
+  `ValueNotifier` migration analyzer (Etapa E) should treat a
+  `ValueListenableBuilder`-only consumer as compatible, not as a blocking
+  case, and document this explicitly rather than silently following the
+  brief's more conservative illustration.
+- **Follow-up needed before Etapa E's fixtures can exercise
+  `Observable`/`Computed` as listener targets end-to-end:**
+  `test/fixtures/fake_all_observer` needs `Observable`/`Computed` to
+  `implements ValueListenable<T>` with real `addListener`/`removeListener`,
+  matching the real package. Deliberately not done in Etapa A to keep that
+  change's blast radius limited to new files plus a small, additive
+  `AllObserverTypeChecker` extension — every existing fixture and rule
+  test keeps resolving exactly as before. `UnitSemanticIndex`'s
+  `listenerRegistrations`/`listenerRemovals` capability is tested today
+  only against plain Flutter `ValueNotifier`/`ChangeNotifier` targets,
+  which already exercise the same `isFlutterListenableType` code path.
+
 ## Future rules
 
 - `avoid_large_observer_scope` (performance; mentioned as an example in
@@ -209,10 +280,37 @@ runtime. Repeat runtime verification before each compatibility release.
 
 Still deferred:
 
-- minimum-reactive-subtree wrapping and automatic Observer scope reduction;
+- **Resolved (Etapa C):** minimum-reactive-subtree wrapping, via the new
+  `WrapSmallestReactiveSubtreeAssist`
+  (`lib/src/assists/wrap_smallest_reactive_subtree_assist.dart`), offered
+  alongside the existing permissive `Wrap with Observer` assist rather than
+  replacing it. Still out of scope for this specialized action (the
+  permissive assist remains the manual fallback in these cases):
+  - only a `.value` read of `Observable`/`Computed` is recognized as the
+    anchoring read — reactive-collection reads (`items.length`,
+    `items.contains(...)`) and `watch(context)` are not yet supported as
+    triggers;
+  - automatic *Observer scope reduction* (shrinking an already-existing,
+    too-broad `Observer` wrap down to a smaller one) is not attempted —
+    this assist only ever introduces a new wrap, it never edits/replaces an
+    existing `Observer`;
+  - the "already exactly the root of an enclosing `Observer` builder" check
+    is deliberately duplicated from `wrap_with_observer_assist.dart` rather
+    than factored into a shared helper, trading a small amount of code
+    duplication for zero risk to that already-tested assist. Revisit this
+    if a third assist ever needs the same check.
 - `setState`, `ValueNotifier`, `ChangeNotifier`, listener, Future, Stream, and
   complete `AsyncState` migrations;
 - Observable-to-plain-value conversion and cross-file migrations;
+- **Resolved (Etapa B):** reactive-collection mutation detection (List/Map/
+  Set) integrated into the existing purity rules, and a new
+  `copied_reactive_collection_outside_tracking` rule (`strict`/`all`,
+  `info`) detecting a `.toList()`/`.toSet()` snapshot read inside a tracking
+  scope instead of the original collection. Still out of scope for that
+  rule: spread-literal snapshots (`[...items]`), field (non-local) snapshots,
+  and any assist/quick fix (diagnostic only) — see
+  `documentation/en/rules/copied_reactive_collection_outside_tracking.md`,
+  "Limitations".
 - snippets, completion, custom hover, and fix-on-save, which need
   editor-specific integration beyond portable `custom_lint`;
 - DevTools, which needs runtime protocol and UI work;

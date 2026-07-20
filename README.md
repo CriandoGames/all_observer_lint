@@ -153,6 +153,14 @@ file, a locally-shadowing parameter/variable, or another unprefixed import
 that also exposes `Observer`). It stays unavailable in callbacks, tracked
 contexts, `watch(context)`, constant contexts, and unresolved code.
 
+Selecting a reactive `.value` read (of an `Observable`/`Computed`) instead
+also offers **Wrap smallest reactive subtree with Observer** — a more
+targeted action that wraps only the smallest Widget containing that read,
+leaving surrounding siblings untouched, and that stays unavailable when the
+read only reaches a Widget through an event-handler closure (e.g.
+`onPressed`) or when the Widget is already exactly the root of an enclosing
+`Observer` builder.
+
 ## Presets
 
 | Preset | Use when |
@@ -185,6 +193,7 @@ contexts, `watch(context)`, constant contexts, and unresolved code.
 | [`observer_without_reactive_read`](documentation/en/rules/observer_without_reactive_read.md) | `Observer` builders with no proven tracked read (strict/all). |
 | [`computed_without_reactive_read`](documentation/en/rules/computed_without_reactive_read.md) | `Computed` callbacks with no proven tracked read (strict/all). |
 | [`effect_without_reactive_read`](documentation/en/rules/effect_without_reactive_read.md) | `effect` callbacks with no proven tracked read (strict/all). |
+| [`copied_reactive_collection_outside_tracking`](documentation/en/rules/copied_reactive_collection_outside_tracking.md) | A reactive collection copied to a plain snapshot before an `Observer`/`Computed`/`effect` that only reads the snapshot (strict/all). |
 
 ## More Documentation
 

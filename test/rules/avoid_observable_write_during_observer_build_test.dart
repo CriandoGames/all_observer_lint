@@ -36,6 +36,30 @@ void main() {
       final result = await resolveFixture('observer_write_valid.dart');
       expect(countOffenses(result.unit), 0);
     });
+
+    test(
+      'flags ObservableList mutations and replacements inside Observer '
+      'build',
+      () async {
+        final result = await resolveFixture(
+          'observer_write_collection_invalid.dart',
+        );
+        // MutatesListDuringObserverBuild: items.add(0) (1)
+        // ReplacesListDuringObserverBuild: items.assignAll([1, 2]) (1)
+        expect(countOffenses(result.unit), 2);
+      },
+    );
+
+    test(
+      'does not flag reactive-collection reads, or a mutation deferred to '
+      'an event-handler closure declared inside Observer',
+      () async {
+        final result = await resolveFixture(
+          'observer_write_collection_valid.dart',
+        );
+        expect(countOffenses(result.unit), 0);
+      },
+    );
   });
 }
 

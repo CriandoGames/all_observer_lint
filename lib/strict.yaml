@@ -20,3 +20,4 @@ custom_lint:
     - observer_without_reactive_read
     - computed_without_reactive_read
     - effect_without_reactive_read
+    - copied_reactive_collection_outside_tracking

@@ -80,6 +80,11 @@ class DiagnosticMessagesEn implements DiagnosticMessages {
     DiagnosticMessageKey.effectWithoutReactiveRead:
         'This effect callback has no statically visible tracked reactive read '
         'and therefore will not rerun from all_observer state.',
+    DiagnosticMessageKey.copiedReactiveCollectionOutsideTracking:
+        'This collection was copied before entering the tracking scope. The '
+        'Observer/Computed/effect reads a plain snapshot and will not update '
+        'when the original collection changes. Copy it inside the tracking '
+        'scope, or derive it with Computed.',
   };
 
   @override

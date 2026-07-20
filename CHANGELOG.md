@@ -47,6 +47,133 @@ specific millisecond numbers, since shared CI runners vary — see
 No preset composition changed, no rule was promoted or newly added, and no
 `const` is ever removed automatically.
 
+**Assisted-migrations phase, Etapa A (infrastructure only — no new rules,
+assists, quick fixes, or preset changes yet).** Internal groundwork for the
+upcoming `ChangeNotifier`/`ValueNotifier`/`Observable`-to-plain-value/
+listener-to-`effect`-or-`ever`/`AsyncState`/`ReactiveScope` assisted
+migrations (see `documentation/backlog.md`, "Still deferred"):
+
+- `lib/src/utils/reactive_collection_operation_classifier.dart`
+  (`ReactiveCollectionOperationClassifier`) — classifies a resolved
+  `ObservableList`/`ObservableMap`/`ObservableSet` operation as `read`,
+  `mutation`, `replacement`, or `unknown`. Every method-name set was
+  re-verified directly against the real, published `all_observer` source
+  (pinned `1.5.6`) while building this — see "Real-runtime corrections"
+  below.
+- `lib/src/utils/migration_safety_result.dart` (`MigrationSafetyResult`,
+  `MigrationCapability`) — the shared three-level (`rule`/`assist`/
+  `quickFix`) model every migration analyzer in this phase will use to
+  decide how strongly (if at all) to surface a candidate, per the phase's
+  "separar diagnóstico de transformação" / "permanecer silencioso em caso
+  de dúvida" principles.
+- `lib/src/utils/source_edit_plan.dart` (`SourceEditPlan`, `SourceTextEdit`)
+  — generalizes `ObserverWrapEdit`'s single-replacement shape to plans that
+  touch more than one source range of the same file, with built-in overlap
+  validation.
+- `lib/src/utils/semantic_reference_index.dart` (`UnitSemanticIndex`) —
+  generalizes `ReactiveReferenceIndex` (full occurrence lists instead of a
+  referenced/not-referenced boolean) and adds lazily-built, per-unit
+  `reactiveReads`/`reactiveMutations`/`listenerRegistrations`/
+  `listenerRemovals` maps, so later migration analyzers do not each run
+  their own full-unit traversal.
+- `AllObserverTypeChecker` gained `isChangeNotifierType`,
+  `isValueNotifierType` and `isFlutterListenableType` (purely additive; no
+  existing method changed) — resolved the same way as every other check in
+  this class, through the element's declaring library URI, never by
+  comparing an identifier's text.
+- `benchmark/reactive_collections_benchmark.dart` and
+  `benchmark/semantic_index_benchmark.dart` added, following the existing
+  `benchmark/` conventions (`bench_stats.dart`, generated fixtures in
+  `benchmark/fixtures/generators.dart`).
+
+**Real-runtime corrections found while auditing `all_observer` 1.5.6 for
+this phase** (see `documentation/backlog.md` for the full note):
+`ObservableMap`/`ObservableSet` do **not** expose `assign`/`assignAll` —
+only `ObservableList` does. `ObservableList` also exposes `addIf`,
+`addAllIf` and `addIfNotNull`, not previously tracked by this package.
+
+No preset changed, no rule was added or promoted, and no existing
+rule/assist/fix behavior changed — this entry is internal infrastructure
+only, added ahead of the migration analyzers/assists/rules that will
+consume it in subsequent, separately-reviewed changes.
+
+**Assisted-migrations phase, Etapa B (reactive collections).**
+
+- `avoid_reactive_write_in_computed` and
+  `avoid_observable_write_during_observer_build` (both `recommended`,
+  `warning`) now also flag reactive-collection mutations/replacements
+  (`list.add(...)`, `map['k'] = v`, `list.length = n`,
+  `list.assignAll(...)`, ...), not only `.value` writes — a coverage
+  widening of the shared `ReactiveWriteDetector`, whose public API is
+  unchanged. Every existing fixture for both rules was re-verified to
+  contain no collection mutation that would newly change behavior; new
+  fixtures cover the widened detection directly. See
+  `documentation/architecture.md` and `documentation/backlog.md`.
+- New rule `copied_reactive_collection_outside_tracking` (`strict`/`all`,
+  `info`, experimental, **not** in `recommended`): flags a local
+  `.toList()`/`.toSet()` snapshot of a reactive collection read inside an
+  `Observer`/`Computed`/`effect` tracking scope while the original
+  collection itself is not read there — the Observer/Computed/effect
+  tracks a plain snapshot and never updates when the source collection
+  changes. Diagnostic only; no assist/quick fix yet. See
+  `documentation/en/rules/copied_reactive_collection_outside_tracking.md`.
+
+`prefer_batch_for_multiple_related_writes` was deliberately not widened in
+this change (tracked in `documentation/backlog.md`). No other preset
+changed; `recommended.yaml` gained no new rule.
+
+**Bug fix (found by the full regression run, Etapa C checkpoint):**
+`copied_reactive_collection_outside_tracking`'s
+`_findReactiveCollectionInChain` did not walk through a `PrefixedIdentifier`
+(a bare `target.property` where both sides are simple names, e.g.
+`counters.keys` — syntactically distinct from `PropertyAccess`, which the
+walk already handled), so a snapshot derived through one extra hop like
+`counters.keys.toList()` was silently never traced back to the reactive
+`ObservableMap` and never flagged. Fixed by adding the same
+`PrefixedIdentifier` branch `_originalCollectionElement` already had.
+Covered by the existing `MapKeysWidget` case in
+`copied_reactive_collection_outside_tracking_invalid.dart` (already present,
+was passing for the wrong reason — the assertion only checked the total
+count, not which classes matched).
+
+**Assisted-migrations phase, Etapa C (menor subárvore reativa — Widget).**
+
+- New assist `WrapSmallestReactiveSubtreeAssist`
+  (`lib/src/assists/wrap_smallest_reactive_subtree_assist.dart`), registered
+  alongside (not replacing) the existing, now-permissive `Wrap with
+  Observer` assist. Where the permissive assist offers to wrap whatever
+  Widget contains the raw cursor/selection, this specialized action only
+  activates when the selection is on (or inside) a resolved `.value` read
+  of an `Observable`/`Computed`, and anchors on *that read* — walking up to
+  the nearest ancestor expression whose static type is a Flutter `Widget`
+  and wrapping only that, leaving surrounding siblings/containers (e.g. a
+  `Column` around the matched `Text`) untouched. Offered at priority `79`,
+  just under the permissive assist's `80`, so both can be available at once
+  without either shadowing the other.
+- Closure safety: the upward walk stops and the assist stays unavailable if
+  it would have to cross a closure whose own resolved function type does
+  not return a Flutter `Widget` (an event handler like `onPressed`) before
+  ever reaching a Widget — a write/read inside an event handler never runs
+  as part of a build, so an `Observer` inserted outside it would not track
+  anything meaningful. Closures that *do* return a `Widget`
+  (`itemBuilder`, an `Observer` builder, `MaterialApp.builder`, ...) are
+  transparent to the walk, since they run synchronously as part of some
+  widget's build.
+- Reuses the existing `ObserverWrapEditBuilder` (replacement text/import
+  edit assembly) and `AllObserverImportResolver` (import safety) unchanged.
+  The small "is this node already exactly the root of an enclosing
+  `Observer(...)` builder" check is deliberately duplicated from
+  `wrap_with_observer_assist.dart` rather than extracted into a shared
+  helper, to avoid touching that already-tested assist for this addition —
+  see `documentation/backlog.md`.
+- Scope (first version): only a `.value` read of `Observable`/`Computed` is
+  recognized as the anchoring read. Reactive-collection reads
+  (`items.length`, `items.contains(...)`) and `watch(context)` are not yet
+  supported as triggers for this *specialized* action — the permissive
+  assist remains available for those. See `documentation/backlog.md`.
+- No rule, quick fix, or preset changed by this entry — assist-only, per
+  the phase's diagnostic/transformation separation.
+
 ## 0.5.1
 
 Stabilization patch, addressing the P0/P1 findings from the pre-publication

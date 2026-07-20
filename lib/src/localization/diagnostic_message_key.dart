@@ -24,4 +24,5 @@ enum DiagnosticMessageKey {
   observerWithoutReactiveRead,
   computedWithoutReactiveRead,
   effectWithoutReactiveRead,
+  copiedReactiveCollectionOutsideTracking,
 }

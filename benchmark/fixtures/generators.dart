@@ -109,3 +109,89 @@ String generateDisposeReactiveResourcesFixture(int resourceCount) {
 
   return buffer.toString();
 }
+
+/// A class with a single `ObservableList<int>` field and [operationCount]
+/// method calls on it, alternating reads/mutations/replacements/unknown —
+/// exercises `ReactiveCollectionOperationClassifier.classifyMethodInvocation`.
+String generateReactiveCollectionOperationsFixture(int operationCount) {
+  final buffer = StringBuffer()
+    ..writeln("import 'package:all_observer/all_observer.dart';")
+    ..writeln()
+    ..writeln('class BenchCollectionOwner {')
+    ..writeln('  final list = ObservableList<int>([1, 2, 3]);')
+    ..writeln()
+    ..writeln('  void run() {');
+
+  const cycle = [
+    'list.length;',
+    'list.contains(1);',
+    'list.add(1);',
+    'list.removeWhere((e) => e == 0);',
+    'list.assignAll([1, 2, 3]);',
+    'list.toString();',
+  ];
+  for (var i = 0; i < operationCount; i++) {
+    buffer.writeln('    ${cycle[i % cycle.length]}');
+  }
+
+  buffer
+    ..writeln('  }')
+    ..writeln('}');
+
+  return buffer.toString();
+}
+
+/// A class with [fieldCount] private `Observable<int>` fields, each read
+/// once, mutated once, and — for every other field — listened to via
+/// `ValueNotifier`-style `addListener`/`removeListener` on a companion
+/// legacy field, exercising every lazily-built capability of
+/// `UnitSemanticIndex` (`references`, `reactiveReads`, `reactiveMutations`,
+/// `listenerRegistrations`, `listenerRemovals`) at once.
+String generateSemanticIndexFixture(int fieldCount) {
+  final buffer = StringBuffer()
+    ..writeln("import 'package:all_observer/all_observer.dart';")
+    ..writeln("import 'package:flutter/foundation.dart';")
+    ..writeln()
+    ..writeln('class BenchSemanticIndexOwner {');
+
+  for (var i = 0; i < fieldCount; i++) {
+    buffer.writeln('  final _field$i = Observable<int>(0);');
+    if (i.isEven) {
+      buffer.writeln('  final _legacy$i = ValueNotifier<int>(0);');
+    }
+  }
+
+  buffer
+    ..writeln()
+    ..writeln('  void _onChanged() {}')
+    ..writeln()
+    ..writeln('  BenchSemanticIndexOwner() {');
+  for (var i = 0; i < fieldCount; i++) {
+    if (i.isEven) {
+      buffer.writeln('    _legacy$i.addListener(_onChanged);');
+    }
+  }
+  buffer.writeln('  }');
+
+  buffer.writeln();
+  buffer.writeln('  void touch() {');
+  for (var i = 0; i < fieldCount; i++) {
+    buffer.writeln('    _field$i.value;');
+    buffer.writeln('    _field$i.value = _field$i.value + 1;');
+  }
+  buffer.writeln('  }');
+
+  buffer
+    ..writeln()
+    ..writeln('  void teardown() {');
+  for (var i = 0; i < fieldCount; i++) {
+    if (i.isEven) {
+      buffer.writeln('    _legacy$i.removeListener(_onChanged);');
+    }
+  }
+  buffer
+    ..writeln('  }')
+    ..writeln('}');
+
+  return buffer.toString();
+}

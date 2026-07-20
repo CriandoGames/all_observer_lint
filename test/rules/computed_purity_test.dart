@@ -44,6 +44,32 @@ void main() {
       final result = await resolveFixture('computed_purity_valid.dart');
       expect(countWrites(result.unit), 0);
     });
+
+    test(
+      'flags ObservableList/Map/Set mutations and replacements inside '
+      'Computed',
+      () async {
+        final result = await resolveFixture(
+          'computed_purity_collection_invalid.dart',
+        );
+        // MutatesListInComputed: items.add(0) (1)
+        // ReplacesListInComputed: items.assignAll([1, 2]) (1)
+        // MutatesMapInComputed: counters['a'] = 1 (1)
+        // MutatesSetInComputed: tags.add('a') (1)
+        expect(countWrites(result.unit), 4);
+      },
+    );
+
+    test(
+      'does not flag reactive-collection reads or plain-List mutation '
+      'inside Computed',
+      () async {
+        final result = await resolveFixture(
+          'computed_purity_collection_valid.dart',
+        );
+        expect(countWrites(result.unit), 0);
+      },
+    );
   });
 
   group('avoid_set_state_in_computed', () {

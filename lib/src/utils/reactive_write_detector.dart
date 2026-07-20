@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
 import 'all_observer_type_checker.dart';
+import 'reactive_collection_operation_classifier.dart';
 
 /// Describes a single reactive-write occurrence found by
 /// [ReactiveWriteDetector].
@@ -20,13 +21,22 @@ class ReactiveWriteOccurrence {
 
 /// Finds direct writes to `all_observer` reactive values within a subtree.
 ///
-/// "Direct" is intentional and conservative: this detector recognizes
-/// `x.value = ...`, `x.value++`, `x.value--`, and compound assignments like
-/// `x.value += 1` where `x`'s static type is `Observable`/`Computed`. It
-/// deliberately does not attempt to detect indirect mutation through
-/// aliases, reactive collection mutation (`list.add(...)`), or mutation
-/// through helper methods, to keep the false-positive rate low. Expanding
-/// coverage is tracked in `documentation/backlog.md`.
+/// "Direct" is intentional and conservative: this detector recognizes:
+///
+/// - `x.value = ...`, `x.value++`, `x.value--`, and compound assignments
+///   like `x.value += 1` where `x`'s static type is `Observable`/`Computed`;
+/// - a reactive-collection mutation or wholesale replacement (`list.add(...)`,
+///   `list.assignAll(...)`, `map['k'] = v`, `list.length = n`, ...) on an
+///   `ObservableList`/`ObservableMap`/`ObservableSet`, classified through
+///   [ReactiveCollectionOperationClassifier] — the same classifier used by
+///   the reactive-collection rules introduced alongside it, so "is this a
+///   mutation" is decided identically everywhere in this package (see
+///   `documentation/architecture.md`).
+///
+/// It deliberately does not attempt to detect indirect mutation through
+/// aliases or mutation through helper methods, to keep the false-positive
+/// rate low. Expanding coverage further is tracked in
+/// `documentation/backlog.md`.
 ///
 /// The walk stops at nested function boundaries by default (see
 /// [includeNestedFunctions]), because a write inside a nested closure does
@@ -56,9 +66,11 @@ class _ReactiveWriteVisitor extends RecursiveAstVisitor<void> {
     required AllObserverTypeChecker checker,
     required this.includeNestedFunctions,
     required this.root,
-  }) : _checker = checker;
+  }) : _checker = checker,
+       _collectionClassifier = ReactiveCollectionOperationClassifier(checker);
 
   final AllObserverTypeChecker _checker;
+  final ReactiveCollectionOperationClassifier _collectionClassifier;
   final bool includeNestedFunctions;
   final AstNode root;
   final List<ReactiveWriteOccurrence> occurrences = [];
@@ -79,6 +91,28 @@ class _ReactiveWriteVisitor extends RecursiveAstVisitor<void> {
         _checker.isComputedType(targetType);
   }
 
+  /// Extracts `(target, propertyName)` from a bare property-access
+  /// expression (`target.propertyName`), in either AST shape the analyzer
+  /// may produce for it — mirrors [_isReactiveValueAccess]'s own dual-shape
+  /// handling, generalized for any property name (used here for
+  /// `length =`), not just `value`.
+  ({Expression target, String propertyName})? _propertyAccessParts(
+    Expression expression,
+  ) {
+    if (expression is PropertyAccess) {
+      final target = expression.target;
+      if (target == null) return null;
+      return (target: target, propertyName: expression.propertyName.name);
+    }
+    if (expression is PrefixedIdentifier) {
+      return (
+        target: expression.prefix,
+        propertyName: expression.identifier.name,
+      );
+    }
+    return null;
+  }
+
   @override
   void visitFunctionExpression(FunctionExpression node) {
     if (!includeNestedFunctions && node != root) {
@@ -90,8 +124,38 @@ class _ReactiveWriteVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitAssignmentExpression(AssignmentExpression node) {
-    if (_isReactiveValueAccess(node.leftHandSide)) {
+    final lhs = node.leftHandSide;
+    if (_isReactiveValueAccess(lhs)) {
       occurrences.add(ReactiveWriteOccurrence(node, 'assignment to .value'));
+    } else if (lhs is IndexExpression) {
+      // `list[i] = ...` / `map[k] = ...`.
+      if (_collectionClassifier.classifyIndexExpression(lhs) ==
+          ReactiveCollectionOperationKind.mutation) {
+        occurrences.add(
+          ReactiveWriteOccurrence(
+            node,
+            'mutation of reactive collection (index assignment)',
+          ),
+        );
+      }
+    } else {
+      // `list.length = ...` — the only shared collection property with a
+      // public setter (see ReactiveCollectionOperationClassifier).
+      final parts = _propertyAccessParts(lhs);
+      if (parts != null &&
+          _collectionClassifier.classifyPropertyAccess(
+                parts.target,
+                propertyName: parts.propertyName,
+                isWrite: true,
+              ) ==
+              ReactiveCollectionOperationKind.mutation) {
+        occurrences.add(
+          ReactiveWriteOccurrence(
+            node,
+            'mutation of reactive collection (length assignment)',
+          ),
+        );
+      }
     }
     super.visitAssignmentExpression(node);
   }
@@ -116,5 +180,30 @@ class _ReactiveWriteVisitor extends RecursiveAstVisitor<void> {
       );
     }
     super.visitPrefixExpression(node);
+  }
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    final kind = _collectionClassifier.classifyMethodInvocation(node);
+    switch (kind) {
+      case ReactiveCollectionOperationKind.mutation:
+        occurrences.add(
+          ReactiveWriteOccurrence(
+            node,
+            'mutation of reactive collection (${node.methodName.name})',
+          ),
+        );
+      case ReactiveCollectionOperationKind.replacement:
+        occurrences.add(
+          ReactiveWriteOccurrence(
+            node,
+            'replacement of reactive collection (${node.methodName.name})',
+          ),
+        );
+      case ReactiveCollectionOperationKind.read:
+      case ReactiveCollectionOperationKind.unknown:
+        break;
+    }
+    super.visitMethodInvocation(node);
   }
 }

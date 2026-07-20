@@ -246,6 +246,161 @@ improvements, not just constant-factor ones, and
 scope (e.g. a `RebuildScopeFinder` cache, gated behind the same benchmarks
 showing it would matter).
 
+## Assisted migrations: diagnostic/transformation capability levels
+
+The assisted-migrations phase (`ChangeNotifier`/`ValueNotifier`/redundant-
+`Observable`/listener-to-`effect`-or-`ever`/`AsyncState`/`ReactiveScope`)
+introduces a shared vocabulary for "should this candidate be surfaced, and
+how strongly": `lib/src/utils/migration_safety_result.dart`
+(`MigrationCapability`, `MigrationSafetyResult`). Three levels, cumulative
+in capability:
+
+- `rule` — only a diagnostic is safe; no transformation is offered.
+- `assist` — a manually-triggered transformation can be offered.
+- `quickFix` — the diagnostic carries enough proven information to also
+  attach an automatic, local, compilable fix.
+
+Every migration analyzer in this phase builds one `MigrationSafetyResult`
+per candidate from its own evidence and never re-derives safety from
+scattered booleans downstream; the corresponding rule/assist/fix only
+consults `allowsRule`/`allowsAssist`/`allowsQuickFix`. A candidate with no
+capability at all (`isSilent`) produces no diagnostic, no assist, and no
+fix — matching the phase's "permanecer silencioso em caso de dúvida"
+principle: silence is a first-class, tested outcome, not an omission.
+
+## Shared migration infrastructure
+
+Three more utilities exist purely to keep the (upcoming) migration
+analyzers from each re-walking a whole `CompilationUnit`:
+
+- `lib/src/utils/reactive_collection_operation_classifier.dart`
+  (`ReactiveCollectionOperationClassifier`) — classifies a resolved
+  operation on an `ObservableList`/`ObservableMap`/`ObservableSet`
+  receiver as `read`, `mutation`, `replacement` (a wholesale
+  `assign`/`assignAll`), or `unknown`. Every method-name set is grounded in
+  the real, published `all_observer` source (see
+  `documentation/backlog.md`, "Assisted-migrations phase — real-runtime
+  audit notes"), not the phase's own illustrative brief, which assumed
+  `assign`/`assignAll` also exist on `ObservableMap`/`ObservableSet` — they
+  do not.
+- `lib/src/utils/semantic_reference_index.dart` (`UnitSemanticIndex`) —
+  generalizes `ReactiveReferenceIndex`: `declarations`/`references` are
+  built eagerly (cheap, always needed), while `reactiveReads`/
+  `reactiveMutations`/`listenerRegistrations`/`listenerRemovals` are each a
+  `late final` field computed lazily, on first access — a migration
+  analyzer that never asks about listeners never pays for a listener-call
+  walk of the unit. Deliberately coarse-grained: it records *that* an
+  occurrence exists somewhere in the unit, not *where* (inside a tracking
+  scope or not) — that context-sensitive judgment stays with each
+  analyzer, which walks up locally from the small, already-found
+  occurrence node (bounded by AST depth) instead of re-scanning the file.
+- `lib/src/utils/source_edit_plan.dart` (`SourceEditPlan`,
+  `SourceTextEdit`) — generalizes `ObserverWrapEdit`'s single-replacement
+  shape to migrations that touch more than one source range in the same
+  file (e.g. a field declaration plus every read of it). Validates at
+  construction that no two edits overlap.
+
+`AllObserverTypeChecker` gained three purely additive methods for this
+phase — `isChangeNotifierType`, `isValueNotifierType`,
+`isFlutterListenableType` — resolved exactly like every other check in
+that class (declaring library URI first, name second), so a local class
+named `ChangeNotifier`/`ValueNotifier` is never matched. No existing
+method's behavior changed.
+
+## Assisted migrations — Etapa B: reactive-collection mutation coverage
+
+`lib/src/utils/reactive_write_detector.dart` (`ReactiveWriteDetector`) now
+detects reactive-collection mutations/replacements
+(`ReactiveCollectionOperationClassifier`'s `mutation`/`replacement` kinds —
+`list.add(...)`, `map['k'] = v`, `list.length = n`, `list.assignAll(...)`,
+...) in addition to its original `.value` assignment/increment/decrement
+detection. This is a pure coverage widening of an existing, tested
+detector — its public `findIn` signature is unchanged — consumed
+automatically by both call sites that already existed:
+`avoid_reactive_write_in_computed` and
+`avoid_observable_write_during_observer_build` (both `recommended`,
+`warning`). Every existing fixture for both rules was re-checked against
+the real `all_observer` collection shape before this change to confirm
+none contained a collection mutation that would newly flip from silent to
+flagged (see `documentation/backlog.md`); new fixtures
+(`computed_purity_collection_{invalid,valid}.dart`,
+`observer_write_collection_{invalid,valid}.dart`) cover the new detection
+paths directly. `prefer_batch_for_multiple_related_writes` was
+deliberately **not** widened in this same change — see
+`documentation/backlog.md`.
+
+`lib/src/rules/copied_reactive_collection_outside_tracking.dart` is a new,
+`strict`/`all`-only, `info`-severity rule: it flags a local `.toList()`/
+`.toSet()` snapshot of a reactive collection that is read inside an
+`Observer`/`Computed`/`effect` tracking scope while the original collection
+is not — the classic "the Observer tracks a plain snapshot, not the
+reactive source" bug. It reuses `TrackingCallbackResolver` (already shared
+by every rule that needs to find an `Observer`/`Computed`/`effect`
+builder closure) and stays silent whenever the original collection cannot
+be resolved to a simple, traceable reference — see the rule's own
+documentation for its full safety-gate list. Diagnostic only: no assist or
+quick fix ships with it yet.
+
+## Assisted migrations — Etapa C: menor subárvore reativa (Widget)
+
+`lib/src/assists/wrap_smallest_reactive_subtree_assist.dart`
+(`WrapSmallestReactiveSubtreeAssist`) is a new assist, registered alongside
+— not in place of — the existing, permissive `Wrap with Observer` assist
+(`wrap_with_observer_assist.dart`, itself unchanged). Both are always
+offered together; they differ only in *what* they anchor on:
+
+- The permissive assist ignores read content entirely: it wraps the
+  smallest Widget containing the raw cursor/selection, regardless of
+  whether anything reactive is read there.
+- The specialized assist only activates when the selection is on (or
+  inside) a resolved `.value` read of an `Observable`/`Computed`
+  (`_ReactiveValueReadFinder`, a `RecursiveAstVisitor` that keeps the
+  innermost matching read whose range contains the target). It then
+  discards the raw selection and walks up from *that read* — not from the
+  cursor — to find the Widget to wrap, so triggering it anywhere inside a
+  read-bearing expression (not just exactly on it) still resolves to the
+  same, correct anchor.
+
+Both are offered at different priorities (permissive: `80`, specialized:
+`79`) so neither shadows the other in the assist list.
+
+**Upward walk and closure safety.** From the resolved read,
+`_smallestSafeWidgetContaining` walks up the AST looking for the nearest
+ancestor `Expression` whose static type is a Flutter `Widget`. If, before
+finding one, the walk reaches a `FunctionExpression` whose own resolved
+`FunctionType.returnType` is *not* a Flutter `Widget` (an event handler
+such as `onPressed`/`onChanged`), the walk stops and the assist reports
+unavailable (`null`) — a value read/write inside an event handler never
+executes as part of any widget build, so an `Observer` wrapped around
+something outside that handler would never see it. A closure whose return
+type *is* a `Widget` (an `itemBuilder`, an `Observer`'s own builder,
+`MaterialApp.builder`, ...) is transparent to the walk and does not block
+it, since such closures run synchronously as part of some widget's build —
+this is what lets the assist correctly wrap only the `Text` returned by a
+`ListView.builder`'s `itemBuilder`, for a read of an indexed element.
+
+**Reuse, not reimplementation.** The specialized assist reuses
+`ObserverWrapEditBuilder` (replacement text and import-edit assembly) and
+`AllObserverImportResolver` (all import-safety logic) exactly as the
+permissive assist does — neither was touched. The small check for "is this
+node already exactly the root of an enclosing `Observer(...)` builder"
+(arrow body or block `return`) is deliberately **duplicated** from
+`wrap_with_observer_assist.dart` rather than extracted into a shared
+helper: the permissive assist is already tested and shipped, and extracting
+a shared helper at this point would mean touching it for a feature that
+does not need to. See `documentation/backlog.md` for the explicit
+trade-off note.
+
+**Scope (first version).** Only a `.value` read of
+`Observable`/`Computed` is recognized as the anchoring read for the
+*specialized* action. Reads of reactive collections
+(`items.length`, `items.contains(...)`) and `watch(context)` are not yet
+recognized triggers here — the permissive assist remains available
+manually in those cases. See `documentation/backlog.md`, "Still deferred".
+
+No rule, quick fix, or preset changed in this step — assist-only, matching
+the phase's diagnostic/transformation separation.
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and
