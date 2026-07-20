@@ -3,6 +3,8 @@ description: >-
   Minimal Flutter app demonstrating all_observer_lint's recommended preset
   catching real reactive bugs, with a fixed version next to each one.
 version: 0.0.1
+homepage: https://github.com/CriandoGames/all_observer_lint/tree/main/example
+repository: https://github.com/CriandoGames/all_observer_lint
 publish_to: none
 
 environment:
