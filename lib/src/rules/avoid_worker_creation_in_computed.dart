@@ -40,8 +40,8 @@ class AvoidWorkerCreationInComputed extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const finder = ComputedCallbackFinder(checker);
+    final checker = AllObserverTypeChecker();
+    final finder = ComputedCallbackFinder(checker);
 
     context.registry.addMethodInvocation((node) {
       if (checker.isEffectOrWorkerInvocation(node) &&

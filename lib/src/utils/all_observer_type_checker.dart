@@ -31,7 +31,22 @@ import 'package:analyzer/dart/element/type.dart';
 /// only [_coreClassNames] / [_workerFunctionNames] / friends below need to
 /// change — no rule file should ever need editing for that.
 class AllObserverTypeChecker {
-  const AllObserverTypeChecker();
+  AllObserverTypeChecker();
+
+  /// Per-execution memoization of the supertype/interface/mixin hierarchy
+  /// walk, keyed by [InterfaceElement] identity (never by [DartType], since
+  /// distinct [InterfaceType] instances can share the same declaring
+  /// element, e.g. different generic instantiations of the same class).
+  ///
+  /// This checker is created once per rule/assist execution (see call
+  /// sites in `lib/src/rules/*.dart` and
+  /// `lib/src/assists/wrap_with_observer_assist.dart`) and discarded when
+  /// that execution ends, so this cache never grows unbounded and never
+  /// keeps analyzer elements alive across analysis sessions. It is
+  /// intentionally an *instance* field, not `static`, precisely so nothing
+  /// here is shared across executions.
+  final Map<InterfaceElement, _TypeFacts> _typeFacts =
+      Map<InterfaceElement, _TypeFacts>.identity();
 
   /// URI prefix shared by every public and internal library of the
   /// `all_observer` package.
@@ -104,38 +119,59 @@ class AllObserverTypeChecker {
 
   /// Walks the supertype chain of [type] (including mixins/interfaces)
   /// looking for a class named [names], resolved from `all_observer`.
+  ///
+  /// The walk itself is shared (and memoized, see [_resolveTypeFacts])
+  /// across every category check for the same root element: a single
+  /// traversal already collects every `all_observer`/Flutter name in the
+  /// hierarchy, so this only needs to test set membership afterwards.
   bool _hasReactiveSupertypeNamed(DartType? type, Set<String> names) {
-    if (type is! InterfaceType) return false;
+    final facts = _resolveTypeFacts(type);
+    if (facts == null) return false;
+    return facts.allObserverNames.any(names.contains);
+  }
+
+  bool _hasFlutterSupertypeNamed(DartType? type, String name) {
+    final facts = _resolveTypeFacts(type);
+    if (facts == null) return false;
+    return facts.flutterNames.contains(name);
+  }
+
+  /// Returns the memoized [_TypeFacts] for [type]'s declaring element,
+  /// computing and caching them on first use. Returns `null` for anything
+  /// that is not an [InterfaceType] (functions, records, etc.), which never
+  /// has a supertype chain to walk.
+  _TypeFacts? _resolveTypeFacts(DartType? type) {
+    if (type is! InterfaceType) return null;
+    return _typeFacts.putIfAbsent(
+      type.element,
+      () => _scanTypeHierarchy(type),
+    );
+  }
+
+  /// Performs the actual supertype/interface/mixin traversal exactly once
+  /// per distinct [InterfaceElement], recording every `all_observer` and
+  /// Flutter framework class name encountered anywhere in the hierarchy so
+  /// every `is*Type` check for that same root element becomes an O(1) set
+  /// lookup instead of a repeated tree walk.
+  _TypeFacts _scanTypeHierarchy(InterfaceType type) {
     final visited = <InterfaceElement>{};
     final queue = <InterfaceType>[type];
+    final allObserverNames = <String>{};
+    final flutterNames = <String>{};
     while (queue.isNotEmpty) {
       final current = queue.removeLast();
       final element = current.element;
       if (!visited.add(element)) continue;
-      if (names.contains(element.name) && _isFromAllObserver(element)) {
-        return true;
+      final name = element.name;
+      if (name != null) {
+        if (_isFromAllObserver(element)) allObserverNames.add(name);
+        if (_isFromFlutter(element)) flutterNames.add(name);
       }
       if (element.supertype != null) queue.add(element.supertype!);
       queue.addAll(element.interfaces);
       queue.addAll(element.mixins);
     }
-    return false;
-  }
-
-  bool _hasFlutterSupertypeNamed(DartType? type, String name) {
-    if (type is! InterfaceType) return false;
-    final visited = <InterfaceElement>{};
-    final queue = <InterfaceType>[type];
-    while (queue.isNotEmpty) {
-      final current = queue.removeLast();
-      final element = current.element;
-      if (!visited.add(element)) continue;
-      if (element.name == name && _isFromFlutter(element)) return true;
-      if (element.supertype != null) queue.add(element.supertype!);
-      queue.addAll(element.interfaces);
-      queue.addAll(element.mixins);
-    }
-    return false;
+    return _TypeFacts(allObserverNames: allObserverNames, flutterNames: flutterNames);
   }
 
   // ---------------------------------------------------------------------
@@ -352,4 +388,17 @@ class AllObserverTypeChecker {
 
   bool isObservableStreamType(DartType? type) =>
       _hasReactiveSupertypeNamed(type, _observableStreamClassNames);
+}
+
+/// The result of a single supertype/interface/mixin hierarchy walk for one
+/// [InterfaceElement]: every class name found in that hierarchy that
+/// resolves back to `all_observer`, and separately every class name found
+/// that resolves back to the Flutter framework. A single traversal fills
+/// both sets, so [AllObserverTypeChecker] never runs a separate walk per
+/// category (`Observable`, `Computed`, `Widget`, ...).
+class _TypeFacts {
+  const _TypeFacts({required this.allObserverNames, required this.flutterNames});
+
+  final Set<String> allObserverNames;
+  final Set<String> flutterNames;
 }

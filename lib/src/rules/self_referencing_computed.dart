@@ -37,8 +37,8 @@ class SelfReferencingComputed extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const detector = SelfReferencingComputedDetector(checker);
+    final checker = AllObserverTypeChecker();
+    final detector = SelfReferencingComputedDetector(checker);
 
     context.registry.addInstanceCreationExpression((node) {
       if (detector.isSelfReferencingComputed(node)) {

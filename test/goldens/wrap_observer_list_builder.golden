@@ -1,0 +1,19 @@
+import 'package:flutter/widgets.dart';
+import 'package:all_observer/all_observer.dart';
+
+class ItemsView extends StatelessWidget {
+  const ItemsView({super.key, required this.items});
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return Observer(
+          () => Text('Item $index'),
+        );
+      },
+    );
+  }
+}

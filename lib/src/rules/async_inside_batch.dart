@@ -30,7 +30,7 @@ class AsyncInsideBatch extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
     context.registry.addMethodInvocation((node) {
       if (!checker.isBatchInvocation(node)) return;
       for (final argument in node.argumentList.arguments) {

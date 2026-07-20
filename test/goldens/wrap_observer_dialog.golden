@@ -1,0 +1,25 @@
+import 'package:flutter/material.dart';
+import 'package:all_observer/all_observer.dart';
+
+class DialogTrigger extends StatelessWidget {
+  const DialogTrigger({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () {
+        showDialog<void>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: Observer(
+                () => Text('Mensagem'),
+              ),
+            );
+          },
+        );
+      },
+      child: const Text('Open'),
+    );
+  }
+}

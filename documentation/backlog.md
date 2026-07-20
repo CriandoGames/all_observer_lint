@@ -137,10 +137,14 @@ same-class, zero-parameter helper method (directly or chained through
 further such helpers) — see "Detection coverage gaps" above for the exact,
 deliberately narrow scope of that. Still open from that review:
 
-- **Mixed `watch(context)` + `.value` in the same expression.** `Wrap with
-  Observer` still stays unavailable rather than guessing at a safe partial
-  wrap. (Deliberate: see the "Mixed watch + .value" design note near the
-  assist's own tests/docs — not a bug, a documented deferral.)
+- **Resolved (this task).** "Mixed `watch(context)` + `.value` in the same
+  expression" no longer needs a special case: `Wrap with Observer` is now
+  permissive by design (see `documentation/architecture.md`, "`Wrap with
+  Observer`: permissive by design") and no longer inspects reads at all, so
+  this combination — like every other Widget expression — is simply
+  available. Judging whether the combination is redundant is left to the
+  opt-in `observer_without_reactive_read`/`unobserved_reactive_read_in_build`
+  lints.
 - **Resolved:** `test/runtime_contract/fake_runtime_contract_test.dart` now
   asserts, via a lightweight source-text check that needs no network access,
   that `fake_all_observer` still declares the exact signatures verified
@@ -158,6 +162,34 @@ deliberately narrow scope of that. Still open from that review:
   (existing golden-comparison tests already run fixtures they *transform*
   through `dart format`, but plain, never-transformed fixtures have not
   been re-checked).
+
+## Wrap with Observer / performance task (this change)
+
+- **`const`-chain rewriting.** `Wrap with Observer` still declines to fire
+  when the selection is in a constant context. There is no safe, general
+  transformation of the surrounding `const` chain implemented (removing
+  `const` from every ancestor that requires it would be a much larger,
+  separately-reviewed change) — out of scope per the task brief
+  ("remoção automática de `const`"). Tracked here as future work, not a
+  bug.
+- **`RebuildScopeFinder` cache.** `lib/src/utils/build_context_detector.dart`
+  was intentionally left unchanged. The brief only asked for this cache "se
+  os benchmarks mostrarem ganho mensurável," and the assist itself no longer
+  calls `RebuildScopeFinder` at all (see `documentation/architecture.md`).
+  The rules that still use it (`avoid_reactive_creation_in_build`,
+  `avoid_effect_creation_in_build`, `watch_only_inside_build`,
+  `avoid_observable_write_during_observer_build`) each call `find`/
+  `findObserverScope` a bounded, small number of times per file (once per
+  creation-site/write-site candidate, not once per reactive read), so there
+  was no benchmark evidence of a repeated-ancestor-walk hot path to justify
+  adding a cache. Revisit if a future rule calls it per-read instead of
+  per-candidate.
+- **Cross-file `unused_reactive_state`.** The reference index introduced in
+  this task (`ReactiveReferenceIndex`) is still scoped to a single
+  `CompilationUnit`, matching the rule's existing, deliberate single-file
+  scope. Widening it to cross-file references remains explicitly out of
+  scope (see the task brief, "não ampliar o escopo para referências entre
+  arquivos nesta mudança").
 
 ## Future rules
 

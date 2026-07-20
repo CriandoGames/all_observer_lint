@@ -1,5 +1,52 @@
 # Changelog
 
+## Unreleased
+
+Two independent changes, tracked together per the task brief. Not yet
+released/published — see `documentation/backlog.md` for open follow-ups.
+
+**`Wrap with Observer` is now permissive.** The assist no longer requires a
+reactive read, a `watch(context)` call, or that the selection sit inside a
+widget `build` method / other rebuild scope. It now appears over any
+expression whose resolved static type is a Flutter `Widget`, choosing the
+smallest such Widget containing the cursor/selection, as long as: the
+context is not `const`, the node is not already exactly the root of an
+enclosing `Observer(...)` builder (arrow body or block `return`), and the
+node is not itself an `Observer` creation. Whether wrapping a particular
+Widget with `Observer` was a good idea is left entirely to the existing
+opt-in lints, `observer_without_reactive_read` and
+`unobserved_reactive_read_in_build` — **their preset placement is
+unchanged**: both remain opt-in via `strict.yaml`/`all.yaml`, not part of
+`recommended.yaml`, because a reactive read can still be legitimately
+hidden behind a helper, a controller method, an inherited method, an
+external abstraction, a builder, or a closure. See
+`documentation/architecture.md`, "`Wrap with Observer`: permissive by
+design".
+
+New `lib/src/utils/observer_wrap_edit_builder.dart` (`ObserverWrapEditBuilder`)
+factors out replacement-text/import-edit assembly from the assist; all
+import-safety logic remains solely in `AllObserverImportResolver`
+(unchanged behavior for every existing collision/shadowing/prefix case).
+
+**Performance.** `AllObserverTypeChecker` now memoizes its
+supertype/interface/mixin hierarchy walk per execution (one checker
+instance per rule/assist run, never global/static), collecting every
+`all_observer`/Flutter class name in a type's hierarchy in a single
+traversal instead of one traversal per `is*Type` check.
+`unused_reactive_state` and `dispose_reactive_resources` now each build a
+small index once (per compilation unit, and per class, respectively)
+instead of re-walking the whole unit / the whole `dispose()` call graph
+once per candidate variable/resource — see `lib/src/utils/
+reactive_reference_index.dart`, `lib/src/utils/disposal_index.dart`, and
+`documentation/architecture.md`, "Performance: per-execution caching and
+indices". `benchmark/` has the harnesses used to validate this; run them
+before/after on the same machine to reproduce (this task does not assert
+specific millisecond numbers, since shared CI runners vary — see
+`documentation/backlog.md`).
+
+No preset composition changed, no rule was promoted or newly added, and no
+`const` is ever removed automatically.
+
 ## 0.5.1
 
 Stabilization patch, addressing the P0/P1 findings from the pre-publication

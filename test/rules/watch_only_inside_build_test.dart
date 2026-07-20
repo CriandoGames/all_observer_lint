@@ -11,7 +11,7 @@ import '../support/resolve_fixture.dart';
 /// mirrors `WatchOnlyInsideBuild.run` exactly (see that file) so a
 /// divergence between the two would be a bug in one of them.
 void main() {
-  const checker = AllObserverTypeChecker();
+  final checker = AllObserverTypeChecker();
   final finder = RebuildScopeFinder(checker);
 
   int countOffenses(CompilationUnit unit) {

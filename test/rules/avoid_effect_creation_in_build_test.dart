@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../support/resolve_fixture.dart';
 
 void main() {
-  const checker = AllObserverTypeChecker();
+  final checker = AllObserverTypeChecker();
   final finder = RebuildScopeFinder(checker);
 
   int countOffenses(CompilationUnit unit) {

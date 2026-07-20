@@ -1,0 +1,24 @@
+import 'package:all_observer/all_observer.dart';
+import 'package:flutter/widgets.dart';
+
+class DualCounterView extends StatelessWidget {
+  const DualCounterView({
+    super.key,
+    required this.first,
+    required this.second,
+  });
+  final Observable<int> first;
+  final Observable<int> second;
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      () => Column(
+        children: [
+          Text('${first.value}'),
+          Text('${second.value}'),
+        ],
+      ),
+    );
+  }
+}

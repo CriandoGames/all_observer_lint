@@ -42,7 +42,7 @@ class WatchOnlyInsideBuild extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
     final finder = RebuildScopeFinder(checker);
 
     context.registry.addMethodInvocation((node) {

@@ -1,7 +1,6 @@
 // ignore_for_file: experimental_member_use
 
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart' hide LintCode;
 import 'package:analyzer/error/listener.dart';
@@ -11,11 +10,19 @@ import '../localization/diagnostic_message_key.dart';
 import '../localization/diagnostic_messages.dart';
 import '../localization/locale_resolver.dart';
 import '../utils/all_observer_type_checker.dart';
+import '../utils/reactive_reference_index.dart';
 
 /// `unused_reactive_state` (strict, `info`)
 ///
 /// Flags private file-level or field-level reactive state that is created but
 /// never referenced in the same resolved Dart unit.
+///
+/// Performance note: the "is this variable referenced elsewhere in the
+/// unit" check is backed by a [ReactiveReferenceIndex] built once per
+/// [CompilationUnit] (cached for the lifetime of this single rule
+/// execution, see `indexes` below) instead of walking the whole unit again
+/// for every candidate variable, so a file with N reactive fields performs
+/// a constant number of full-unit traversals rather than N of them.
 class UnusedReactiveState extends DartLintRule {
   UnusedReactiveState({required CustomLintConfigs configs})
     : super(code: _buildCode(configs));
@@ -39,7 +46,11 @@ class UnusedReactiveState extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
+
+    // Local to this single rule execution: never a static/global cache, so
+    // it cannot leak analyzer elements or grow across analysis sessions.
+    final indexes = Map<CompilationUnit, ReactiveReferenceIndex>.identity();
 
     context.registry.addVariableDeclaration((node) {
       if (!_isPrivateFieldOrTopLevel(node)) return;
@@ -52,7 +63,12 @@ class UnusedReactiveState extends DartLintRule {
 
       final unit = node.thisOrAncestorOfType<CompilationUnit>();
       if (unit == null) return;
-      if (_hasReference(unit: unit, declaration: node, owner: owner)) return;
+
+      final index = indexes.putIfAbsent(
+        unit,
+        () => ReactiveReferenceIndex.build(unit),
+      );
+      if (index.isReferenced(owner)) return;
 
       reporter.atNode(node, code);
     });
@@ -77,41 +93,6 @@ bool _isReactiveInitializer(
   return checker.isObservableType(type) ||
       checker.isObservableListType(type) ||
       checker.isComputedType(type);
-}
-
-bool _hasReference({
-  required CompilationUnit unit,
-  required VariableDeclaration declaration,
-  required Element owner,
-}) {
-  final visitor = _ReferenceVisitor(declaration: declaration, owner: owner);
-  unit.accept(visitor);
-  return visitor.found;
-}
-
-class _ReferenceVisitor extends RecursiveAstVisitor<void> {
-  _ReferenceVisitor({required this.declaration, required this.owner});
-
-  final VariableDeclaration declaration;
-  final Element owner;
-
-  bool found = false;
-
-  @override
-  void visitSimpleIdentifier(SimpleIdentifier node) {
-    if (found) return;
-    if (_isInsideDeclaration(node)) return;
-
-    if (_canonicalElement(node.element) == owner) {
-      found = true;
-      return;
-    }
-
-    super.visitSimpleIdentifier(node);
-  }
-
-  bool _isInsideDeclaration(SimpleIdentifier node) =>
-      node.offset >= declaration.offset && node.end <= declaration.end;
 }
 
 Element? _canonicalElement(Element? element) {

@@ -39,7 +39,7 @@ class PreferAssignAllForReactiveListReplace extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
 
     context.registry.addBlock((block) {
       final statements = block.statements;

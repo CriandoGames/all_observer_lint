@@ -45,7 +45,7 @@ class PreferComputedForDerivedState extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
 
     context.registry.addAssignmentExpression((node) {
       if (node.operator.lexeme != '=') return;

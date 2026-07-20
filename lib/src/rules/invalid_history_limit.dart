@@ -31,7 +31,7 @@ class InvalidHistoryLimit extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
 
     void check(ArgumentList arguments) {
       final limit = _namedArgument(arguments, 'limit');

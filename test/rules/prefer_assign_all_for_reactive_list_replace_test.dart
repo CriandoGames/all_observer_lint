@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import '../support/resolve_fixture.dart';
 
 void main() {
-  const checker = AllObserverTypeChecker();
+  final checker = AllObserverTypeChecker();
 
   int countOffenses(CompilationUnit unit) {
     var count = 0;

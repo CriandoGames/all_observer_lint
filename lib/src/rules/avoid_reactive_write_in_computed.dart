@@ -48,8 +48,8 @@ class AvoidReactiveWriteInComputed extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const writeDetector = ReactiveWriteDetector(checker);
+    final checker = AllObserverTypeChecker();
+    final writeDetector = ReactiveWriteDetector(checker);
 
     context.registry.addInstanceCreationExpression((node) {
       if (!checker.isComputedCreation(node)) return;

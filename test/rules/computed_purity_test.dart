@@ -15,9 +15,9 @@ import '../support/resolve_fixture.dart';
 /// rule"): avoid_reactive_write_in_computed, avoid_set_state_in_computed,
 /// avoid_worker_creation_in_computed, avoid_io_in_computed.
 void main() {
-  const checker = AllObserverTypeChecker();
-  const writeDetector = ReactiveWriteDetector(checker);
-  const finder = ComputedCallbackFinder(checker);
+  final checker = AllObserverTypeChecker();
+  final writeDetector = ReactiveWriteDetector(checker);
+  final finder = ComputedCallbackFinder(checker);
 
   group('avoid_reactive_write_in_computed', () {
     int countWrites(CompilationUnit unit) {

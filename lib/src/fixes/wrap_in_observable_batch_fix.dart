@@ -18,7 +18,7 @@ class WrapInObservableBatchFix extends DartFix {
     AnalysisError analysisError,
     List<AnalysisError> others,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
 
     context.registry.addBlock((block) {
       final run = _writeRunForError(block, analysisError, checker);

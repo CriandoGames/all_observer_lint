@@ -66,9 +66,9 @@ class ObserverWithoutReactiveRead extends TrackingScopeWithoutReactiveRead {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const callbacks = TrackingCallbackResolver(checker);
-    const collector = ReactiveReadCollector(checker);
+    final checker = AllObserverTypeChecker();
+    final callbacks = TrackingCallbackResolver(checker);
+    final collector = ReactiveReadCollector(checker);
     context.registry.addInstanceCreationExpression((node) {
       final callback = callbacks.observerBuilder(node);
       if (callback != null) reportIfEmpty(callback, reporter, collector);
@@ -93,9 +93,9 @@ class ComputedWithoutReactiveRead extends TrackingScopeWithoutReactiveRead {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const callbacks = TrackingCallbackResolver(checker);
-    const collector = ReactiveReadCollector(checker);
+    final checker = AllObserverTypeChecker();
+    final callbacks = TrackingCallbackResolver(checker);
+    final collector = ReactiveReadCollector(checker);
     context.registry.addInstanceCreationExpression((node) {
       final callback = callbacks.computedBuilder(node);
       if (callback != null) reportIfEmpty(callback, reporter, collector);
@@ -120,9 +120,9 @@ class EffectWithoutReactiveRead extends TrackingScopeWithoutReactiveRead {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const callbacks = TrackingCallbackResolver(checker);
-    const collector = ReactiveReadCollector(checker);
+    final checker = AllObserverTypeChecker();
+    final callbacks = TrackingCallbackResolver(checker);
+    final collector = ReactiveReadCollector(checker);
     context.registry.addMethodInvocation((node) {
       final callback = callbacks.effectBuilder(node);
       if (callback != null) reportIfEmpty(callback, reporter, collector);

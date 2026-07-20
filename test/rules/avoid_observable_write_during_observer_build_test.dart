@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../support/resolve_fixture.dart';
 
 void main() {
-  const checker = AllObserverTypeChecker();
-  const writeDetector = ReactiveWriteDetector(checker);
+  final checker = AllObserverTypeChecker();
+  final writeDetector = ReactiveWriteDetector(checker);
 
   int countOffenses(CompilationUnit unit) {
     var count = 0;

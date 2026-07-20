@@ -151,6 +151,101 @@ reality. `test/runtime_contract/fake_runtime_contract_test.dart` guards that
 fake's shape between real-package audits, with a lightweight, network-free
 source check.
 
+## `Wrap with Observer`: permissive by design
+
+`lib/src/assists/wrap_with_observer_assist.dart` offers wrapping *any*
+expression that resolves to a Flutter `Widget` with `Observer(() => ...)`,
+regardless of whether a reactive read is present, whether `watch(context)`
+is used, or whether the Widget sits inside a `build` method or some other
+rebuild scope. This is a deliberate product decision, not an oversight: the
+developer decides where an `Observer` boundary belongs; the plugin's job is
+to make that mechanical edit safe and available everywhere it is
+syntactically valid, not to gate it behind a guess about whether the
+resulting `Observer` will "do anything."
+
+Judging whether a given `Observer` usage was a good idea after the fact is
+left entirely to the two opt-in lints:
+
+- `observer_without_reactive_read` (opt-in via `strict.yaml`/`all.yaml`)
+- `unobserved_reactive_read_in_build` (opt-in via `strict.yaml`/`all.yaml`)
+
+Both stay opt-in — **not** part of `recommended.yaml`, and this task did not
+change that — because a reactive read can be legitimately hidden behind a
+helper method, a controller method, an inherited method, an external
+abstraction, a builder, a closure, or some other component that itself
+performs the read. Those are false positives for a rule that tries to prove
+"no read happened," but they are not false *un*availabilities for the
+assist, since the assist never tried to prove that in the first place.
+
+The assist only checks the conditions required to produce valid,
+non-redundant code:
+
+1. the selected node's resolved static type is a Flutter `Widget`;
+2. it is the smallest such Widget expression containing the
+   cursor/selection (a bounded AST-path descent, see
+   `_isSmallestWidgetContainingSelection` — it only recurses into children
+   that themselves fully contain the selection, never a full subtree scan);
+3. the node is not in a constant context (no automatic `const`-chain
+   rewrite is attempted — see `documentation/backlog.md`);
+4. `AllObserverImportResolver` can produce a safe import plan (this is
+   unconditional: it always can, falling back to a uniquely prefixed import
+   when needed);
+5. the node is not already exactly the root expression an enclosing
+   `Observer(...)` builder returns (`_isAlreadyObserverBuilderRoot` —
+   arrow body or a top-level `return` in a block body; Widgets nested
+   *inside* that root, e.g. a `Column`'s children, remain wrappable, since
+   splitting one `Observer` scope into smaller ones is a legitimate
+   performance decision);
+6. the node is not itself an `Observer` creation (checked semantically via
+   `AllObserverTypeChecker.isObserverWidgetCreation`, never by comparing
+   identifier text).
+
+`lib/src/utils/observer_wrap_edit_builder.dart` (`ObserverWrapEditBuilder`)
+factors the "build the replacement text + import edit" step into a small,
+independently testable unit; all import-safety logic (shadowing,
+collisions, prefixed vs. unprefixed, ambiguous imports) still lives
+entirely in `AllObserverImportResolver` — the assist and the edit builder
+never reimplement it.
+
+## Performance: per-execution caching and indices
+
+`AllObserverTypeChecker` (`lib/src/utils/all_observer_type_checker.dart`) is
+constructed once per rule/assist execution (a local variable inside each
+`run()`/`DartAssist.run()`, never `static`/global) and memoizes the
+supertype/interface/mixin hierarchy walk per `InterfaceElement` identity. A
+single traversal per root element collects every `all_observer` and Flutter
+framework name in that hierarchy at once, so `isObservableType`,
+`isComputedType`, `isObservableListType`, `isObservableMapType`,
+`isObservableSetType`, and `isFlutterWidgetType` (and friends) share one
+walk instead of each re-walking the same chain. Because the cache is an
+instance field scoped to one checker instance, and one checker exists per
+execution, nothing here is shared across files, across rules, or across
+analysis sessions — it cannot grow unbounded and never keeps analyzer
+elements alive past the execution that created them.
+
+Two rules that previously re-traversed a whole compilation unit / whole
+`dispose()` call graph once per candidate now build a small index once and
+query it in O(1) per candidate instead:
+
+- `unused_reactive_state` builds a `ReactiveReferenceIndex`
+  (`lib/src/utils/reactive_reference_index.dart`) once per
+  `CompilationUnit` (cached in a local `Map<CompilationUnit,
+  ReactiveReferenceIndex>.identity()` for the lifetime of that rule
+  execution), so a file with N private reactive fields performs a constant
+  number of full-unit traversals, not N of them.
+- `dispose_reactive_resources` builds a `DisposalIndex`
+  (`lib/src/utils/disposal_index.dart`) once per class by walking
+  `dispose()` and its same-class, zero-argument local helpers exactly once
+  (with cycle protection), recording every disposal-shaped call found. Each
+  of the class's candidate resources is then a single map lookup instead of
+  a fresh walk of the same call graph.
+
+See `benchmark/` for the harnesses used to validate these are asymptotic
+improvements, not just constant-factor ones, and
+`documentation/backlog.md` for what this task deliberately left out of
+scope (e.g. a `RebuildScopeFinder` cache, gated behind the same benchmarks
+showing it would matter).
+
 ## Categories
 
 See `lib/src/diagnostics/diagnostic_category.dart` for the full enum and

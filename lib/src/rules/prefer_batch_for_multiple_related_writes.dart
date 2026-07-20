@@ -45,7 +45,7 @@ class PreferBatchForMultipleRelatedWrites extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
+    final checker = AllObserverTypeChecker();
 
     context.registry.addBlock((block) {
       if (_isInsideBatchCallback(block, checker)) return;

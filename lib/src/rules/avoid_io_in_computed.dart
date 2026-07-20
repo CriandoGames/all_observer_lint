@@ -49,8 +49,8 @@ class AvoidIoInComputed extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    const checker = AllObserverTypeChecker();
-    const finder = ComputedCallbackFinder(checker);
+    final checker = AllObserverTypeChecker();
+    final finder = ComputedCallbackFinder(checker);
 
     context.registry.addAwaitExpression((node) {
       if (finder.isInsideComputedCallback(node)) {
